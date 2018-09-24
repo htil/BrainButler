@@ -1,13 +1,15 @@
 "use strict";
-import React, {Component} from "react";
-import {ScrollView, Text} from "react-native";
+import React from "react";
+import {Button, View, ScrollView, Text} from "react-native";
 
-export default class Article extends Component
+import {createStackNavigator} from "react-navigation";
+
+class OdyssesyScreen extends React.Component
 {
 	render()
 	{
-		const odyssesy = require("./odyssesy")
-		const text = odyssesy.text
+		const {text} = this.props.navigation.getParam("text", "");
+		console.log(text);
 		return (
 			<ScrollView>
 				<Text>{text}</Text>
@@ -15,3 +17,28 @@ export default class Article extends Component
 		);
 	}
 }
+
+class MenuScreen extends React.Component
+{
+	render()
+	{
+		const odyssesyText = require("./odyssesy");
+		return (
+			<View>
+				<Button title="Read the Odyssesy" onPress={()=>this.props.navigation.navigate("Odyssesy", {text : odyssesyText})}/>
+			</View>
+		);
+	}
+}
+
+const App = createStackNavigator(
+	{
+		Menu: {screen: MenuScreen},
+		Odyssesy: {screen: OdyssesyScreen}
+	},
+	{
+		initialRouteName: "Menu"
+	}
+);
+
+export default App;
