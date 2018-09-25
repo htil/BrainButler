@@ -1,22 +1,9 @@
 "use strict";
 import React from "react";
 import {Button, View, ScrollView, Text} from "react-native";
-
 import {createStackNavigator} from "react-navigation";
 
-class OdyssesyScreen extends React.Component
-{
-	render()
-	{
-		const {text} = this.props.navigation.getParam("text", "");
-		console.log(text);
-		return (
-			<ScrollView>
-				<Text>{text}</Text>
-			</ScrollView>
-		);
-	}
-}
+import ArticleScreen from "./ArticleScreen";
 
 class MenuScreen extends React.Component
 {
@@ -34,7 +21,7 @@ class MenuScreen extends React.Component
 const App = createStackNavigator(
 	{
 		Menu: {screen: MenuScreen},
-		Odyssesy: {screen: OdyssesyScreen}
+		Odyssesy: {screen: ArticleScreen}
 	},
 	{
 		initialRouteName: "Menu"
