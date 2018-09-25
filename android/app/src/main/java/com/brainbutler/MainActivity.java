@@ -2,7 +2,16 @@ package com.brainbutler;
 
 import com.facebook.react.ReactActivity;
 
+import v.LibMuse.LibMuseModule;
+
 public class MainActivity extends ReactActivity {
+
+    public MainActivity()
+    {
+	    super();
+	    LibMuseModule.mainActivity = this;
+    }
+
 
     /**
      * Returns the name of the main component registered from JavaScript.

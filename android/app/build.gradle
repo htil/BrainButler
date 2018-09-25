@@ -99,7 +99,7 @@ android {
 
     defaultConfig {
         applicationId "com.brainbutler"
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -137,6 +137,8 @@ android {
 }
 
 dependencies {
+    compile project(':react-native-background-timer')
+    compile project(':react-native-libmuse')
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
