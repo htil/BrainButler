@@ -137,8 +137,7 @@ android {
 }
 
 dependencies {
-    compile project(':react-native-background-timer')
-    compile project(':react-native-libmuse')
+    compile project(':rn-libmuse')
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
