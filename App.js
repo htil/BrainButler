@@ -4,6 +4,11 @@ import {Button, View, ScrollView, Text, DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 import ArticleScreen from "./ArticleScreen";
 
+import RNLibMuse from "rn-libmuse";
+console.log(RNLibMuse);
+RNLibMuse.Init();
+//RNLibMuse.startListening();
+
 
 class MenuScreen extends React.Component
 {
