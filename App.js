@@ -5,22 +5,23 @@ import {Button, View, ScrollView, Text, DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
 import RNLibMuse from "rn-libmuse";
-RNLibMuse.Init();
 //Local modules
 import ArticleScreen from "./ArticleScreen";
-import EEG from "./eeg.js";
+import {eeg_observable} from "./eeg.js";
 
+const EPOCH_SIZE = 256; //Number of samples in an epoch
+const EPOCH_INTERVAL = 100; //ms between emitted epochs
+
+RNLibMuse.Init();
 DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
 	if (muses.length > 0)
 	{
 		RNLibMuse.connect(muses[0]);
 	}
 });
-/*
-DeviceEventEmitter.addListener("MUSE_EEG", (eeg) => {
-	console.log(eeg);
-});*/
 
+const eeg_stream = eeg_observable(EPOCH_SIZE, EPOCH_INTERVAL);
+eeg_stream.subscribe(eeg_packet => console.log(eeg_packet));
 
 class MenuScreen extends React.Component
 {
