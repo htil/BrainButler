@@ -1,7 +1,7 @@
 "use strict";
 //React Modules
 import React from "react";
-import {Button, View, ScrollView, Text, DeviceEventEmitter} from "react-native";
+import {Button, View, ScrollView, Text, DeviceEventEmitter, StyleSheet, TouchableNativeFeedback} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
 import RNLibMuse from "rn-libmuse";
@@ -23,15 +23,40 @@ DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
 const eeg_stream = eeg_observable(EPOCH_SIZE, EPOCH_INTERVAL);
 eeg_stream.subscribe(eeg_packet => console.log(eeg_packet));
 
+const styles = StyleSheet.create({
+	button:
+	{
+		flex: 1,
+		backgroundColor: "blue"
+	},
+	buttonText:
+	{
+		color: "white",
+		textAlign: "center"
+	}
+
+});
+
 class MenuScreen extends React.Component
 {
 	render()
 	{
 		const odyssesyText = require("./odyssesy");
-		return (
-			<View>
+/*			<View>
 				<Button title="Read the Odyssesy" onPress={()=>this.props.navigation.navigate("Odyssesy", {text : odyssesyText})}/>
-				<Button title="Search/Refresh" onPress={()=>RNLibMuse.search()}/>
+			</View>*/
+		return (
+			<View style={{flex: 1}}>
+			<TouchableNativeFeedback  onPress={()=>this.props.navigation.navigate("Odyssesy", {text: odyssesyText})}>
+				<View style={{flex:1, backgroundColor:"red"}}>
+					<Text style={styles.buttonText}>Read the Odyssesy</Text>
+				</View>
+			</TouchableNativeFeedback>
+				<TouchableNativeFeedback  onPress={()=>RNLibMuse.search()}>
+					<View style={{flex:2, backgroundColor:"blue"}}>
+						<Text style={styles.buttonText}>Search/Refresh</Text>
+					</View>
+				</TouchableNativeFeedback>
 			</View>
 		);
 	}
