@@ -7,6 +7,7 @@ import {createStackNavigator} from "react-navigation";
 import RNLibMuse from "rn-libmuse";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
+import GameScreen from "./GameScreen";
 import {eeg_observable} from "./eeg.js";
 
 const EPOCH_SIZE = 256; //Number of samples in an epoch
@@ -20,6 +21,10 @@ DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
 		RNLibMuse.connect(muses[0]);
 	}
 });
+
+var museConnected = false;
+DeviceEventEmitter.addListener("OnMuseConnect", muse => {museConnected = true;});
+DeviceEventEmitter.addListener("OnMuseDisconnect", muse => {museConnected = false;});
 
 const eeg_stream = eeg_observable(EPOCH_SIZE, EPOCH_INTERVAL);
 eeg_stream.subscribe(eeg_packet => {
@@ -42,22 +47,29 @@ const styles = StyleSheet.create({
 
 class MenuScreen extends React.Component
 {
+  static navigationOptions = {title: "Main Menu"};
+
 	render()
 	{
 		const odyssesyText = require("./odyssesy");
-/*			<View>
-				<Button title="Read the Odyssesy" onPress={()=>this.props.navigation.navigate("Odyssesy", {text : odyssesyText})}/>
-			</View>*/
+		const navigate = this.props.navigation.navigate;
 		return (
 			<View style={{flex: 1}}>
-			<TouchableNativeFeedback  onPress={()=>this.props.navigation.navigate("Odyssesy", {text: odyssesyText})}>
-				<View style={{flex:1, backgroundColor:"red"}}>
-					<Text style={styles.buttonText}>Read the Odyssesy</Text>
-				</View>
-			</TouchableNativeFeedback>
+			  <TouchableNativeFeedback onPress={()=>navigate("Odyssesy", {text: odyssesyText, title: "The Odyssesy"})}>
+				  <View style={{flex:1, backgroundColor:"red"}}>
+					  <Text style={styles.buttonText}>Read the Odyssesy</Text>
+				  </View>
+			  </TouchableNativeFeedback>
+
 				<TouchableNativeFeedback  onPress={()=>RNLibMuse.search()}>
-					<View style={{flex:2, backgroundColor:"blue"}}>
+					<View style={{flex:2, backgroundColor:"green"}}>
 						<Text style={styles.buttonText}>Search/Refresh</Text>
+					</View>
+				</TouchableNativeFeedback>
+
+				<TouchableNativeFeedback  onPress={()=>navigate("Game", {museConnected})}>
+					<View style={{flex:2, backgroundColor:"blue"}}>
+						<Text style={styles.buttonText}>Train BrainButler</Text>
 					</View>
 				</TouchableNativeFeedback>
 			</View>
@@ -68,7 +80,8 @@ class MenuScreen extends React.Component
 const App = createStackNavigator(
 	{
 		Menu: {screen: MenuScreen},
-		Odyssesy: {screen: ArticleScreen}
+		Odyssesy: {screen: ArticleScreen},
+		Game: {screen: GameScreen}
 	},
 	{
 		initialRouteName: "Menu"
