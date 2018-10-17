@@ -1,11 +1,10 @@
 "use strict";
 import React from "react";
 import {ScrollView, Text} from "react-native";
+import MuseBanner from "./MuseBanner";
+
 export default class ArticleScreen extends React.Component
 {
-	static navigationOptions = ({navigation}) => {
-		return {title: navigation.getParam("title", "Text Article")};
-	};
 	render()
 	{
 		const {text} = this.props.navigation.getParam("text", "");

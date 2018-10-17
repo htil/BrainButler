@@ -1,13 +1,15 @@
 "use strict";
 //React Modules
 import React from "react";
-import {Button, View, ScrollView, Text, DeviceEventEmitter, StyleSheet, TouchableNativeFeedback} from "react-native";
+import {Button, View, ScrollView, Text, StyleSheet, TouchableNativeFeedback} from "react-native";
+import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
 import RNLibMuse from "rn-libmuse";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import GameScreen from "./GameScreen";
+import MuseBanner from "./MuseBanner";
 import {eeg_observable} from "./eeg.js";
 
 const EPOCH_SIZE = 256; //Number of samples in an epoch
@@ -21,10 +23,6 @@ DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
 		RNLibMuse.connect(muses[0]);
 	}
 });
-
-var museConnected = false;
-DeviceEventEmitter.addListener("OnMuseConnect", muse => {museConnected = true;});
-DeviceEventEmitter.addListener("OnMuseDisconnect", muse => {museConnected = false;});
 
 const eeg_stream = eeg_observable(EPOCH_SIZE, EPOCH_INTERVAL);
 eeg_stream.subscribe(eeg_packet => {
@@ -47,7 +45,7 @@ const styles = StyleSheet.create({
 
 class MenuScreen extends React.Component
 {
-  static navigationOptions = {title: "Main Menu"};
+  static navigationOptions = {headerTitle: <MuseBanner title="Main Menu"/>};
 
 	render()
 	{
@@ -67,7 +65,7 @@ class MenuScreen extends React.Component
 					</View>
 				</TouchableNativeFeedback>
 
-				<TouchableNativeFeedback  onPress={()=>navigate("Game", {museConnected})}>
+				<TouchableNativeFeedback  onPress={()=>navigate("Game", {title: "Train BrainButler"})}>
 					<View style={{flex:2, backgroundColor:"blue"}}>
 						<Text style={styles.buttonText}>Train BrainButler</Text>
 					</View>
@@ -84,7 +82,10 @@ const App = createStackNavigator(
 		Game: {screen: GameScreen}
 	},
 	{
-		initialRouteName: "Menu"
+		initialRouteName: "Menu",
+		navigationOptions: ({navigation}) => {
+			return {headerTitle: <MuseBanner title={navigation.getParam("title", "")}/>};
+		}
 	}
 );
 

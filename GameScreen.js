@@ -1,10 +1,10 @@
 "use strict";
 import React from "react";
-import {View, Text} from "react-native";
+import {View, Text, DeviceEventEmitter} from "react-native";
+import MuseBanner from "./MuseBanner";
 
 export default class GameScreen extends React.Component
 {
-  static navigationOptions = {title: "Train BrainButler"};
   render()
   {
     var museConnected = this.props.navigation.getParam("museConnected", false);
