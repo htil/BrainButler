@@ -33,12 +33,14 @@ const styles = StyleSheet.create({
 	button:
 	{
 		flex: 1,
-		backgroundColor: "blue"
+		backgroundColor: "blue",
+		margin: 10
 	},
 	buttonText:
 	{
 		color: "white",
-		textAlign: "center"
+		textAlign: "center",
+		fontSize: 24
 	}
 
 });
@@ -54,19 +56,19 @@ class MenuScreen extends React.Component
 		return (
 			<View style={{flex: 1}}>
 			  <TouchableNativeFeedback onPress={()=>navigate("Odyssesy", {text: odyssesyText, title: "The Odyssesy"})}>
-				  <View style={{flex:1, backgroundColor:"red"}}>
+				  <View style={styles.button}>
 					  <Text style={styles.buttonText}>Read the Odyssesy</Text>
 				  </View>
 			  </TouchableNativeFeedback>
 
 				<TouchableNativeFeedback  onPress={()=>RNLibMuse.search()}>
-					<View style={{flex:2, backgroundColor:"green"}}>
+					<View style={styles.button}>
 						<Text style={styles.buttonText}>Search/Refresh</Text>
 					</View>
 				</TouchableNativeFeedback>
 
 				<TouchableNativeFeedback  onPress={()=>navigate("Game", {title: "Train BrainButler"})}>
-					<View style={{flex:2, backgroundColor:"blue"}}>
+					<View style={styles.button}>
 						<Text style={styles.buttonText}>Train BrainButler</Text>
 					</View>
 				</TouchableNativeFeedback>
