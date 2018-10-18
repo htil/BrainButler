@@ -29,7 +29,6 @@ export default class MuseBanner extends React.Component
 
   componentDidMount()
   {
-    console.log("About to call DeviceEventEmitter");
     DeviceEventEmitter.addListener("OnMuseConnect", this.connectCallback);
     DeviceEventEmitter.addListener("OnMuseDisconnect", this.disconnectCallback);
   }
