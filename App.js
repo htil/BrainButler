@@ -10,10 +10,6 @@ import RNLibMuse from "rn-libmuse";
 import ArticleScreen from "./ArticleScreen";
 import GameScreen from "./GameScreen";
 import MuseBanner from "./MuseBanner";
-import {eeg_observable} from "./eeg.js";
-
-const EPOCH_SIZE = 256; //Number of samples in an epoch
-const EPOCH_INTERVAL = 100; //ms between emitted epochs
 
 RNLibMuse.Init();
 RNLibMuse.setBufferSize(64);
@@ -24,10 +20,6 @@ DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
 	}
 });
 
-const eeg_stream = eeg_observable(EPOCH_SIZE, EPOCH_INTERVAL);
-eeg_stream.subscribe(eeg_packet => {
-	console.log(eeg_packet);
-});
 
 const styles = StyleSheet.create({
 	button:

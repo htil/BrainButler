@@ -3,6 +3,8 @@ import React from "react";
 import {View, Text, StyleSheet, DeviceEventEmitter} from "react-native";
 import {TouchableNativeFeedback} from "react-native";
 
+import GameManager from "./GameManager";
+
 function confirmCorrect()
 {
   DeviceEventEmitter.emit("ArtificialGood");
@@ -14,6 +16,12 @@ function confirmWrong()
 
 export default class GameScreen extends React.Component
 {
+  constructor(props)
+  {
+    super(props);
+    this.manager = new GameManager();
+  }
+
   render()
   {
     //var museConnected = this.props.navigation.getParam("museConnected", false);
@@ -29,8 +37,12 @@ export default class GameScreen extends React.Component
       </View>
     );
   }
-}
 
+  componentWillUnmount()
+  {
+    this.manager.destructor();
+  }
+}
 
 const styles = StyleSheet.create({
   choiceButton:
@@ -61,4 +73,5 @@ class ChoiceButton extends React.Component
       </TouchableNativeFeedback>
     );
   }
+
 }
