@@ -2,11 +2,6 @@
 import {DeviceEventEmitter} from "react-native";
 import {eeg_observable} from "./eeg";
 
-function lastTimestamp(eegEpoch)
-{
-
-}
-
 export default class GameManager
 {
   static EPOCH_SIZE = 256; //Number of samples in an epoch
