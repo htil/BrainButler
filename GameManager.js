@@ -8,6 +8,7 @@ export default class GameManager
   static EPOCH_INTERVAL = 100; //ms between emitted epochs
   constructor()
   {
+    this.all = [];
     this.goods = [];
     this.bads = [];
     this.latestPacket = null;
@@ -27,6 +28,7 @@ export default class GameManager
     this.eegStream = eeg_observable(GameManager.EPOCH_SIZE, GameManager.EPOCH_INTERVAL).subscribe(
       eegPacket => {
         this.latestPacket = eegPacket;
+        this.all.push(this.latestPacket);
 	      //console.log(this.latestPacket);
       });
   }
@@ -36,5 +38,12 @@ export default class GameManager
     DeviceEventEmitter.removeListener("ArtificialGood", this.recordGood);
     DeviceEventEmitter.removeListener("ArtificialBad", this.recordBad);
     this.eegStream.unsubscribe();
+
+    //const jsonGoods = JSON.stringify(this.goods);
+    //console.log(jsonGoods);
+
+    //const jsonBads = JSON.stringify(this.bads);
+    //console.log(jsonBads);
+    //console.log(JSON.stringify(this.all));
   }
 }

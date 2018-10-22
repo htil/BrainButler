@@ -7,43 +7,63 @@ import MuseManager from "./MuseManager";
 export default class MuseBanner extends React.Component
 {
   //Props: title
-  //State: muse
+  //State: message
+  render()
+  {
+    const text = this.props.title + ": " + this.state.message;
+    return (<Text>{text}</Text>);
+  }
 
   constructor(props)
   {
     super(props);
-    this.state = {muse: MuseManager.getInstance().muse};
+    this.manager = MuseManager.getInstance();
 
-    this.connectCallback = (museName) => {
+    this.state = {
+      message: MuseBanner.bannerMessage(this.manager.museName, this.manager.connectionStatus)
+    };
+    this.statusCallback = (museName, connectionStatus) => {
+      console.log("Called statusCallback");
       this.setState(previousState => {
-        return {muse: museName};
+        return {message: MuseBanner.bannerMessage(museName, connectionStatus)};
       });
     };
 
-    this.disconnectCallback = (museName) => {
-      this.setState(previousState => {
-        return {muse: null};
-      });
-    }
+    this.manager.subscribeConnectionState(this.statusCallback);
+  }
+
+  static bannerMessage(museName, connectionStatus)
+  {
+    switch(connectionStatus)
+      {
+        case "CONNECTING":
+          return "Connecting to "+museName;
+          break;
+        case "CONNECTED":
+          return museName +" connected";
+          break;
+        case "DISCONNECTING":
+          return "Disconnecting from "+museName;
+          break; //Yes this is unreachable, but just in case. . .
+        case "DISCONNECTED":
+        default:
+          return MuseBanner.disconnectedMessage();
+          break;
+      }
+  }
+
+  static disconnectedMessage(){return "No headband connected"};
+  static titleCase(raw)
+  {
+    return raw[0].toUpperCase() + raw.slice(1).toLowerCase();
   }
 
   componentDidMount()
   {
-    DeviceEventEmitter.addListener("OnMuseConnect", this.connectCallback);
-    DeviceEventEmitter.addListener("OnMuseDisconnect", this.disconnectCallback);
   }
   componentWillUnmount()
   {
-    DeviceEventEmitter.removeListener("OnMuseConnect", this.connectCallback);
-    DeviceEventEmitter.removeListener("OnMuseDisconnect", this.disconnectCallback);
+    this.manager.unsubscribeConnectionState(this.statusCallback);
   }
 
-  render()
-  {
-    var text;
-    if (this.state.muse) text = this.props.title + ": Connected to " + this.state.muse;
-    else                 text = this.props.title + ": No Muse connected";
-
-    return (<Text>{text}</Text>);
-  }
 }
