@@ -12,8 +12,8 @@ export default class GameScreen extends React.Component
   static MIN_ERROR = 50;
   static MAX_ERROR = 100;
 
-  static MAX_TRIALS = 30;
-  static INTERVAL = 2000; //Interval between equations in ms
+  static MAX_TRIALS = 5; //30;
+  static INTERVAL = 500 //2000; //Interval between equations in ms
 
   constructor(props)
   {
@@ -26,32 +26,47 @@ export default class GameScreen extends React.Component
       trialCount: -1
     };
 
+    this.playing = false;
+    this.finished = false;
+    this.trialCount = -1;
+
+    this.rightEpochs = [];
+    this.wrongEpochs = [];
+
+    this.callbackIds = [];
+
     this.startGame = () =>
     {
-      this.setState(prev => {
-        return {playing: true, finished:false,
-          trialCount:1, equation: this.genEquation()};
-      });
-      setInterval(() => {
-        this.setState(prev => {
-          if (prev.trialCount >= GameScreen.MAX_TRIALS)
-            return {playing: false, finished: true,
-              trialCount:prev.trialCount+1, equation:"Error"};
+      console.log("startGame()");
+      this.playing = true;
+      this.finished = false;
+      this.trialCount = 1;
 
-          return {playing: true, finished: false,
-            trialCount:prev.trialCount+1, equation: this.genEquation()};
+      this.setState(prev => {equation: this.genEquation()});
+      var callbackID = setInterval(() => {
+        this.setState(prev => {
+          if (this.trialCount >= GameScreen.MAX_TRIALS)
+          {
+            this.playing = false;
+            this.finished = true;
+            return {equation:"Error"};
+          }
+
+          ++this.trialCount;
+          return {equation: this.genEquation()};
         });
       }, GameScreen.INTERVAL);
+      this.callbackIds.push(callbackID);
     } //End this.startGame
   }//End constructor
 
   render()
   {
-    if (this.state.finished) return this.finishedScreen();
-    if (!this.state.playing) return this.instructionsScreen();
+    //console.log("Re-rendering()");
+    if (this.finished) return this.finishedScreen();
+    if (!this.playing) return this.instructionsScreen();
 
     const flexPadding = styles.equation.flex;
-    console.log(styles.equation);
     return (
       <View style={{flex: 1}}>
         <View style={{flex: flexPadding}}></View>
@@ -110,7 +125,13 @@ export default class GameScreen extends React.Component
 
   componentWillUnmount()
   {
+    this.callbackIds.forEach(callbackId => clearInterval(callbackId));
     this.manager.destructor();
+
+    console.log("RIGHT");
+    console.log(JSON.stringify(this.rightEpochs));
+    console.log("WRONG");
+    console.log(JSON.stringify(this.wrongEpochs));
   }
 }
 
