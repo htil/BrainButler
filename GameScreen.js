@@ -7,26 +7,90 @@ import GameManager from "./GameManager";
 export default class GameScreen extends React.Component
 {
   //state: equation
-  static PROB_WRONG = 0.3; //Probability of showing an incorrect equation
-  static MAX_OPERAND = 50;
-  static MAX_ERROR = 10;
+  static PROB_WRONG = 0.5; //0.3; //Probability of showing an incorrect equation
+  static MAX_OPERAND = 9;
+  static MIN_ERROR = 50;
+  static MAX_ERROR = 100;
+
+  static MAX_TRIALS = 30;
+  static INTERVAL = 2000; //Interval between equations in ms
 
   constructor(props)
   {
     super(props);
     this.manager = new GameManager();
-    this.state = {equation: this.genEquation()};
+    this.state =
+    {
+      playing: false,
+      equation: "Error, we shouldn't be showing you an equation yet.",
+      trialCount: -1
+    };
 
-    this.confirmCorrect = () => {
-      DeviceEventEmitter.emit("ArtificialGood");
-      this.setState(previousState => {return {equation: this.genEquation()} });
-      console.log("Changed the state");
-    }
-    this.confirmWrong = () => {
-      DeviceEventEmitter.emit("ArtificialBad");
-      this.setState(previousState => {return {equation: this.genEquation()} });
-      console.log("Changed the state");
-    }
+    this.startGame = () =>
+    {
+      this.setState(prev => {
+        return {playing: true, finished:false,
+          trialCount:1, equation: this.genEquation()};
+      });
+      setInterval(() => {
+        this.setState(prev => {
+          if (prev.trialCount >= GameScreen.MAX_TRIALS)
+            return {playing: false, finished: true,
+              trialCount:prev.trialCount+1, equation:"Error"};
+
+          return {playing: true, finished: false,
+            trialCount:prev.trialCount+1, equation: this.genEquation()};
+        });
+      }, GameScreen.INTERVAL);
+    } //End this.startGame
+  }//End constructor
+
+  render()
+  {
+    if (this.state.finished) return this.finishedScreen();
+    if (!this.state.playing) return this.instructionsScreen();
+
+    const flexPadding = styles.equation.flex;
+    console.log(styles.equation);
+    return (
+      <View style={{flex: 1}}>
+        <View style={{flex: flexPadding}}></View>
+        <View style={styles.equation}>
+          <Text style={styles.equationText}>{this.state.equation}</Text>
+        </View>
+        <View style={{flex: flexPadding}}></View>
+      </View>
+    );
+  }
+
+
+  instructionsScreen()
+  {
+    return (
+      <View style={{flex:1}}>
+        <View style={{flex:1}}></View>
+          <View style={styles.instructions}>
+            <Text style={styles.instructionsText}>
+              For each equation, say whether it is right or wrong.
+            </Text>
+          </View>
+        <View style={{flex:1}}></View>
+        <ChoiceButton text="OK" onPress={this.startGame}/>
+      </View>
+    );
+  }
+
+  finishedScreen()
+  {
+    return (
+      <View style={{flex:1}}>
+        <View style={{flex:1}}></View>
+        <View style={styles.instructions}>
+          <Text style={styles.instructionsText}>You have finished the game!</Text>
+        </View>
+        <View style={{flex:1}}></View>
+      </View>
+    );
   }
 
   genEquation()
@@ -36,26 +100,12 @@ export default class GameScreen extends React.Component
     var sum = a + b;
     if (Math.random() <= GameScreen.PROB_WRONG)
     {
-      const error = Math.ceil(Math.random() * GameScreen.MAX_ERROR);
+      const error = GameScreen.MIN_ERROR +
+        Math.floor(Math.random() * (GameScreen.MAX_ERROR+1-GameScreen.MIN_ERROR));
       const sign = (Math.random() <= 0.5) ? 1 : -1;
       sum += error;
     }
     return a + " + " + b + " = " + sum;
-  }
-
-  render()
-  {
-    return (
-      <View style={{flex: 1}}>
-        <View style={styles.equation}>
-          <Text>{this.state.equation}</Text>
-        </View>
-        <View style={{flex: 1, flexDirection: "row"}}>
-          <ChoiceButton text="Right!" backgroundColor="green" onPress={this.confirmCorrect}/>
-          <ChoiceButton text="Wrong!" backgroundColor="red" onPress={this.confirmWrong}/>
-        </View>
-      </View>
-    );
   }
 
   componentWillUnmount()
@@ -64,11 +114,41 @@ export default class GameScreen extends React.Component
   }
 }
 
+class ChoiceButton extends React.Component
+{
+  //Props: onPress, backgroundColor, text
+  render()
+  {
+    return (
+      <TouchableNativeFeedback onPress={this.props.onPress}>
+        <View style={styles.choiceButton}>
+          <View style={{flex:1}}></View>
+          <Text style={styles.choiceText}>{this.props.text}</Text>
+          <View style={{flex:1}}></View>
+        </View>
+      </TouchableNativeFeedback>
+    );
+  }
+}
+
 const styles = StyleSheet.create({
+  instructions:
+  {
+    flex: 1,
+  },
+  instructionsText:
+  {
+    fontSize: 40,
+    textAlign: "center"
+  },
   equation:
   {
-    flex: 4,
-    fontSize: 20,
+    flex: 1,
+  },
+  equationText:
+  {
+    fontSize: 60,
+    fontWeight: "bold",
     textAlign: "center"
   },
   choiceButton:
@@ -80,24 +160,6 @@ const styles = StyleSheet.create({
   {
     textAlign: "center",
     color: "white",
-    fontSize: 20
-  }
+    fontSize: 60
+  },
 });
-
-class ChoiceButton extends React.Component
-{
-  //Props: onPress, backgroundColor, text
-  render()
-  {
-    const backgroundColor = this.props.backgroundColor;
-    const viewStyle = {...styles.choiceButton, ...{backgroundColor} };
-    return (
-      <TouchableNativeFeedback onPress={this.props.onPress}>
-        <View style={viewStyle}>
-          <Text style={styles.choiceText}>{this.props.text}</Text>
-        </View>
-      </TouchableNativeFeedback>
-    );
-  }
-
-}
