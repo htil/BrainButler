@@ -2,7 +2,11 @@
 import {DeviceEventEmitter} from "react-native";
 import {fromEvent, Observable} from "rxjs";
 import {map, flatMap} from "rxjs/operators";
-import {bandpassFilter, epoch} from "@neurosity/pipes";
+
+//import {bandpassFilter, epoch} from "@neurosity/pipes";
+const pipesRef = require("@neurosity/pipes");
+const bandpassFilter = pipesRef.bandpassFilter;
+const epoch = pipesRef.epoch;
 
 const MUSE_RATE = 256; //Muse sends packets at about 256Hz
 const EEG_CHANNELS = ["EEG1", "EEG2", "EEG3", "EEG4"]; //TODO: Obtain these constants from RNLibMuseModule
