@@ -5,19 +5,15 @@ import {Button, View, ScrollView, Text, StyleSheet, TouchableNativeFeedback} fro
 import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
-import RNLibMuse from "rn-libmuse";
+import {MuseDeviceManager} from "rn-libmuse";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import GameScreen from "./GameScreen";
 import MuseBanner from "./MuseBanner";
 
-RNLibMuse.Init();
-RNLibMuse.setBufferSize(64);
+const museManager = MuseDeviceManager.getInstance();
 DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
-	if (muses.length > 0)
-	{
-		RNLibMuse.connect(muses[0]);
-	}
+	if (muses.length > 0) museManager.connect(muses[0]);
 });
 
 
@@ -53,7 +49,7 @@ class MenuScreen extends React.Component
 				  </View>
 			  </TouchableNativeFeedback>
 
-				<TouchableNativeFeedback  onPress={()=>RNLibMuse.search()}>
+				<TouchableNativeFeedback  onPress={()=>museManager.search()}>
 					<View style={styles.button}>
 						<Text style={styles.buttonText}>Search/Refresh</Text>
 					</View>
