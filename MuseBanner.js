@@ -1,61 +1,41 @@
-"use strict";
+//@flow
 import React from "react";
 import {Text} from "react-native";
 import {DeviceEventEmitter} from "react-native";
-import MuseManager from "./MuseManager";
+//import MuseManager from "./MuseManager";
 
-export default class MuseBanner extends React.Component
+import {MuseDeviceManager} from "rn-libmuse";
+import type {ConnectionPacket, ConnectStatus} from "react-native-bci";
+import type {Subscription} from "rxjs";
+
+type Props = {title: string}
+type State = {message: string}
+
+export default class MuseBanner extends React.Component<Props, State>
 {
-  //Props: title
-  //State: message
+
+  //PUBLIC, INSTANCE
   render()
   {
     const text = this.props.title + ": " + this.state.message;
     return (<Text>{text}</Text>);
   }
 
-  constructor(props)
+  constructor(props: Props, parentState?: State)
   {
     super(props);
-    this.manager = MuseManager.getInstance();
+    this.manager = MuseDeviceManager.getInstance();
 
-    this.state = {
-      message: MuseBanner.bannerMessage(this.manager.museName, this.manager.connectionStatus)
-    };
-    this.statusCallback = (museName, connectionStatus) => {
-      console.log("Called statusCallback");
-      this.setState(previousState => {
-        return {message: MuseBanner.bannerMessage(museName, connectionStatus)};
+    if (Object.keys(parentState).length > 0) this.state = Object.assign({}, parentState);
+    else this.state = {message: MuseBanner.bannerMessage("None", "Unknown")};
+
+    this.subscription = MuseDeviceManager.getInstance()
+      .connections().subscribe((packet: ConnectionPacket): void => {
+        this.setState(previousState => {
+          console.log(`{id:${packet.id}, status:${packet.status}}`);
+          return {message: MuseBanner.bannerMessage(packet.id, packet.status)};
+        });
       });
-    };
-
-    this.manager.subscribeConnectionState(this.statusCallback);
-  }
-
-  static bannerMessage(museName, connectionStatus)
-  {
-    switch(connectionStatus)
-      {
-        case "CONNECTING":
-          return "Connecting to "+museName;
-          break;
-        case "CONNECTED":
-          return museName +" connected";
-          break;
-        case "DISCONNECTING":
-          return "Disconnecting from "+museName;
-          break; //Yes this is unreachable, but just in case. . .
-        case "DISCONNECTED":
-        default:
-          return MuseBanner.disconnectedMessage();
-          break;
-      }
-  }
-
-  static disconnectedMessage(){return "No headband connected"};
-  static titleCase(raw)
-  {
-    return raw[0].toUpperCase() + raw.slice(1).toLowerCase();
   }
 
   componentDidMount()
@@ -63,7 +43,30 @@ export default class MuseBanner extends React.Component
   }
   componentWillUnmount()
   {
-    this.manager.unsubscribeConnectionState(this.statusCallback);
+    this.subscription.unsubscribe();
   }
 
+  //PRIVATE, INSTANCE
+  manager: MuseDeviceManager;
+  subscription: Subscription;
+
+  //PRIVATE, STATIC
+  static bannerMessage(museName: string, connectionStatus: ConnectStatus): string
+  {
+    switch(connectionStatus)
+    {
+      case "Connecting": return "Connecting to "+museName;
+      case "Connected":  return museName +" connected";
+      case "Disconnecting": return "Disconnecting from "+museName;
+      case "Disconnected":
+      default:
+        return MuseBanner.disconnectedMessage();
+    }
+  }
+
+  static disconnectedMessage(): string {return "No headband connected"};
+  static titleCase(raw: string): string
+  {
+    return raw[0].toUpperCase() + raw.slice(1).toLowerCase();
+  }
 }

@@ -11,11 +11,13 @@ import ArticleScreen from "./ArticleScreen";
 import GameScreen from "./GameScreen";
 import MuseBanner from "./MuseBanner";
 
-const museManager = MuseDeviceManager.getInstance();
-DeviceEventEmitter.addListener("OnMuseListChanged", (muses) => {
-	if (muses.length > 0) museManager.connect(muses[0]);
-});
+import type {Subscription} from "rxjs";
 
+const museManager = MuseDeviceManager.getInstance();
+
+const museSubscription: Subscription = museManager.devices().subscribe(
+	(muses: Array<string>): void => {if (muses.length > 0) museManager.connect(muses[0]);}
+);
 
 const styles = StyleSheet.create({
 	button:
