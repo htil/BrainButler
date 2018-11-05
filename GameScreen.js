@@ -22,13 +22,10 @@ export default class GameScreen extends React.Component
     this.state =
     {
       playing: false,
+      finished: false,
       equation: "Error, we shouldn't be showing you an equation yet.",
       trialCount: -1
     };
-
-    this.playing = false;
-    this.finished = false;
-    this.trialCount = -1;
 
     this.rightEpochs = [];
     this.wrongEpochs = [];
@@ -37,32 +34,32 @@ export default class GameScreen extends React.Component
 
     this.startGame = () =>
     {
-      this.playing = true;
-      this.finished = false;
-      this.trialCount = 1;
+      this.setState(prev => {
+        return {
+          playing: true, finished: false,
+          equation: this.genEquation(), trialCount: 1
+        };
+      });
 
-      this.setState(prev => {equation: this.genEquation()});
       var callbackID = setInterval(() => {
         this.setState(prev => {
-          if (this.trialCount >= GameScreen.MAX_TRIALS)
-          {
-            this.playing = false;
-            this.finished = true;
-            return {equation:"Error"};
-          }
+          if (prev.trialCount >= GameScreen.MAX_TRIALS)
+            return {playing:false, finished:true,
+                    equation:"Error", trialCount:0};
 
-          ++this.trialCount;
-          return {equation: this.genEquation()};
+          return Object.assign(prev, {
+            equation: this.genEquation(), trialCount: prev.trialCount+1
+          });
         });
       }, GameScreen.INTERVAL);
       this.callbackIds.push(callbackID);
-    } //End this.startGame
+    }; //End this.startGame
   }//End constructor
 
   render()
   {
-    if (this.finished) return this.finishedScreen();
-    if (!this.playing) return this.instructionsScreen();
+    if (this.state.finished) return this.finishedScreen();
+    if (!this.state.playing) return this.instructionsScreen();
 
     const flexPadding = styles.equation.flex;
     return (
