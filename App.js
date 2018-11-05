@@ -5,7 +5,7 @@ import {Button, View, ScrollView, Text, StyleSheet, TouchableNativeFeedback} fro
 import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
-import {MuseDeviceManager} from "rn-libmuse";
+import {MuseDeviceManager} from "react-native-muse";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import GameScreen from "./GameScreen";

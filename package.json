@@ -8,12 +8,11 @@
   },
   "dependencies": {
     "@neurosity/pipes": "git+file:/home/elmines/git/eeg-pipes",
-    "bcijs": "^1.2.2",
     "react": "^16.6.0",
     "react-native": "^0.57.3",
-    "react-native-bci": "git+file:/home/elmines/git/react-native-bci#local",
-    "react-navigation": "^2.16.0",
-    "rn-libmuse": "git+file:/home/elmines/git/LibMuse#local"
+    "react-native-bci": "0.0.3",
+    "react-native-muse": "0.0.2",
+    "react-navigation": "^2.16.0"
   },
   "devDependencies": {
     "babel-jest": "23.6.0",

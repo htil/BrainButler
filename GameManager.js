@@ -1,6 +1,6 @@
 "use strict";
 import {DeviceEventEmitter} from "react-native";
-import {MuseDeviceManager} from "rn-libmuse";
+import {MuseDeviceManager} from "react-native-muse";
 
 export default class GameManager
 {
@@ -15,11 +15,9 @@ export default class GameManager
 
     this.recordGood = () => {
       this.goods.push(this.latestPacket);
-      //console.log("goods = "+this.goods);
     }
     this.recordBad = () => {
       this.bads.push(this.latestPacket);
-      //console.log("bads = "+this.bads);
     }
 
     DeviceEventEmitter.addListener("ArtificialGood", this.recordGood);

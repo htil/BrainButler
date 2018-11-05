@@ -1,5 +1,5 @@
 rootProject.name = 'BrainButler'
-include ':rn-libmuse'
-project(':rn-libmuse').projectDir = new File(rootProject.projectDir, '../node_modules/rn-libmuse/android')
+include ':react-native-muse'
+project(':react-native-muse').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-muse/android')
 
 include ':app'

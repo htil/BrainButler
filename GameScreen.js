@@ -37,7 +37,6 @@ export default class GameScreen extends React.Component
 
     this.startGame = () =>
     {
-      console.log("startGame()");
       this.playing = true;
       this.finished = false;
       this.trialCount = 1;
@@ -62,7 +61,6 @@ export default class GameScreen extends React.Component
 
   render()
   {
-    //console.log("Re-rendering()");
     if (this.finished) return this.finishedScreen();
     if (!this.playing) return this.instructionsScreen();
 

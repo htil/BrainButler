@@ -4,7 +4,7 @@ import {Text} from "react-native";
 import {DeviceEventEmitter} from "react-native";
 //import MuseManager from "./MuseManager";
 
-import {MuseDeviceManager} from "rn-libmuse";
+import {MuseDeviceManager} from "react-native-muse";
 import type {ConnectionPacket, ConnectStatus} from "react-native-bci";
 import type {Subscription} from "rxjs";
 
@@ -32,7 +32,6 @@ export default class MuseBanner extends React.Component<Props, State>
     this.subscription = MuseDeviceManager.getInstance()
       .connections().subscribe((packet: ConnectionPacket): void => {
         this.setState(previousState => {
-          console.log(`{id:${packet.id}, status:${packet.status}}`);
           return {message: MuseBanner.bannerMessage(packet.id, packet.status)};
         });
       });
