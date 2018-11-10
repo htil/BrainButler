@@ -3,6 +3,7 @@ import React from "react";
 import {View, ScrollView, Text, TouchableNativeFeedback, StyleSheet} from "react-native";
 import MuseBanner from "./MuseBanner";
 import Orientation from "react-native-orientation";
+import SystemSetting from "react-native-system-setting";
 
 export default class ArticleScreen extends React.Component
 {
@@ -16,6 +17,15 @@ export default class ArticleScreen extends React.Component
 				Orientation.unlockAllOrientations();
 			});
 		}
+
+		this.darkenScreen = (): void => {
+			//const curr = SystemSetting.getAppBrightness();
+
+			SystemSetting.getAppBrightness().then((curr) =>{
+  			const proposed = curr - 0.1;
+  			SystemSetting.setAppBrightness(proposed >= 0.1 ? proposed : 0.1);
+			});
+		};
 	}
 	render()
 	{
@@ -25,6 +35,8 @@ export default class ArticleScreen extends React.Component
   			<ScrollView style={{flex:1}}>
   				<Text>{text}</Text>
   			</ScrollView>
+  			<Button text="Darken the screen!" style={{backgroundColor:"green"}}
+  			  onPress={this.darkenScreen}/>
   			<Button text="Rotate the Screen!" onPress={this.rotate}/>
 			</View>
 		);
@@ -33,12 +45,13 @@ export default class ArticleScreen extends React.Component
 
 class Button extends TouchableNativeFeedback
 {
-  //Props: onPress, text
+  //Props: onPress, text, style
   render()
   {
+		const style = styles.button;
     return (
       <TouchableNativeFeedback style={{flex: 1}} onPress={this.props.onPress}>
-        <View style={styles.button}>
+        <View style={style}>
           <Text style={styles.buttonText}>{this.props.text}</Text>
         </View>
       </TouchableNativeFeedback>
