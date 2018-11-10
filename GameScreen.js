@@ -5,21 +5,19 @@ import {TouchableNativeFeedback} from "react-native";
 import {MuseDeviceManager} from "react-native-muse";
 import {bandpassFilter, epoch} from "@neurosity/pipes";
 
-
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
-type EquationState = "Correct" | "Incorrect" | "None";
 
 export default class GameScreen extends React.Component<Props, State>
 {
   //state: equation
   static PROB_WRONG: number = 0.5; //0.3; //Probability of showing an incorrect equation
   static MAX_OPERAND: number = 9;
-  static MIN_ERROR: number = 10;
+  static MIN_ERROR: number = 20;
   static MAX_ERROR: number = 30;
 
-  static MAX_TRIALS: number = 5; //30;
-  static INTERVAL: number = 1000 //2000; //Interval between equations in ms
+  static MAX_TRIALS: number = 60; //30;
+  static INTERVAL: number = 1500 //Interval between equations in ms
 
   callbackIds: Array<number>;
   trialCount: number;
@@ -34,32 +32,21 @@ export default class GameScreen extends React.Component<Props, State>
     this.wrongEpochs = [];
     this.callbackIds = [];
     this.manager = MuseDeviceManager.getInstance();
+    this.trialCount = 0;
 
     this.startGame = () =>
     {
-      this.trialCount = 1;
-      this.setState((prev: State): State => {
-        return {playing: true, finished: false, equation: this.genEquation()};
-      });
+      this.trialCount = 0;
+      this.displayEquation();
 
       const callbackID: number = setInterval((): void => {
-
         if (this.trialCount >= GameScreen.MAX_TRIALS)
         {
-          this.correct = "None";
           this.setState((prev: State): State => {
-            return {playing:false, finished:true, equation: ""}
+            return {playing:false, finished:true, equation: ""};
           });
         }
-        else
-        {
-          ++this.trialCount;
-          const right: boolean = Math.random() >= GameScreen.PROB_WRONG;
-          const equation: string = this.genEquation(right);
-          this.setState((prev: State): State => Object.assign(prev, {equation}));
-          this.correct = right ? "Correct" : "Incorrect";
-        }
-
+        else this.displayEquation();
       }, GameScreen.INTERVAL);
       this.callbackIds.push(callbackID);
 
@@ -72,10 +59,10 @@ export default class GameScreen extends React.Component<Props, State>
             interval: 200, samplingRate: this.manager.getSamplingRate()})
         )
         .subscribe((packet) => {
-          //console.log(packet);
-          if (this.correct == "Correct") this.rightEpochs.push(packet);
-          else if (this.correct == "Incorrect") this.wrongEpochs.push(packet);
-
+          if (this.state.playing){
+              if (this.correct) this.rightEpochs.push(packet);
+              else              this.wrongEpochs.push(packet);
+          }
         });
     }; //End this.startGame
   }//End constructor
@@ -126,7 +113,18 @@ export default class GameScreen extends React.Component<Props, State>
     );
   }
 
-  genEquation(correct: boolean = true): string
+  displayEquation(): void
+  {
+    ++this.trialCount;
+    const right: boolean = Math.random() >= GameScreen.PROB_WRONG;
+    const equation: string = GameScreen.genEquation(right);
+    this.correct = right; //Don't change the `correct` flag too early
+    this.setState((prev: State): State => {
+      return {playing:true, finished:false, equation};
+    });
+  }
+
+  static genEquation(correct: boolean = true): string
   {
     const a: number = Math.ceil(Math.random() * GameScreen.MAX_OPERAND);
     const b: number = Math.ceil(Math.random() * GameScreen.MAX_OPERAND);
