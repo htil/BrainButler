@@ -27,17 +27,35 @@ export default class ArticleScreen extends React.Component
 			});
 		};
 	}
+
+	awkParagraphs(text: string)
+	{
+		const paragraphs = text.split("\n")
+		  .map(str => str.trim())
+			.filter(str => str.length > 0);
+
+		var returnedJSX = [];
+		for (let i: number = 0; i < paragraphs.length; ++i)
+		{
+	    const paragraph: string = paragraphs[i];
+			if (i % 2 == 0) returnedJSX.push(
+				<View style={{flex:1}}><Text numberOfLines={5}>{paragraph}</Text></View>
+			);
+			else returnedJSX.push(
+				<View style={{flex:1}}><Text>{paragraph}</Text></View>
+			);
+		}
+		return returnedJSX;
+	}
+
 	render()
 	{
 		const {text} = this.props.navigation.getParam("text", "");
 		return (
 			<View style={{flex:1}}>
   			<ScrollView style={{flex:1}}>
-  				<Text>{text}</Text>
+				  {this.awkParagraphs(text)}
   			</ScrollView>
-  			<Button text="Darken the screen!" style={{backgroundColor:"green"}}
-  			  onPress={this.darkenScreen}/>
-  			<Button text="Rotate the Screen!" onPress={this.rotate}/>
 			</View>
 		);
 	}
