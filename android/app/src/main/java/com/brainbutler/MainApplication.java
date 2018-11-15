@@ -3,6 +3,7 @@ package com.brainbutler;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.sensors.RNSensorsPackage;
 import com.ninty.system.setting.SystemSettingPackage;
 import com.github.yamill.orientation.OrientationPackage;
 import com.reactlibrary.RNLibMusePackage;
@@ -26,6 +27,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNSensorsPackage(),
             new SystemSettingPackage(),
             new OrientationPackage(),
             new RNLibMusePackage()

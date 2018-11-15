@@ -4,6 +4,7 @@ import {View, Text, StyleSheet, DeviceEventEmitter} from "react-native";
 import {TouchableNativeFeedback} from "react-native";
 import {MuseDeviceManager} from "react-native-muse";
 import {bandpassFilter, epoch} from "@neurosity/pipes";
+import type {Observable} from "rxjs";
 
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
@@ -23,6 +24,7 @@ export default class GameScreen extends React.Component<Props, State>
   trialCount: number;
   manager: MuseDeviceManager;
   correct: EquationState;
+  dataObservable: Observable;
 
   constructor(props)
   {
@@ -33,6 +35,19 @@ export default class GameScreen extends React.Component<Props, State>
     this.callbackIds = [];
     this.manager = MuseDeviceManager.getInstance();
     this.trialCount = 0;
+
+    this.dataObservable = this.manager.data().pipe(
+        bandpassFilter({
+          nbChannels: this.manager.getChannelNames().length,
+          cutoffFrequencies: [1, 30]}),
+        epoch({duration: this.manager.getSamplingRate(),
+          interval: 200, samplingRate: this.manager.getSamplingRate()})
+    );
+
+    this.eegSocket = new WebSocket("ws://10.122.192.226:8080");
+    this.eegSocket.onopen = function open(){console.log("connected");};
+    this.eegSocket.onclose = function close(){console.log("disconnected");};
+
 
     this.startGame = () =>
     {
@@ -50,21 +65,15 @@ export default class GameScreen extends React.Component<Props, State>
       }, GameScreen.INTERVAL);
       this.callbackIds.push(callbackID);
 
-      this.dataSubscription = this.manager.data()
-        .pipe(
-          bandpassFilter({
-            nbChannels: this.manager.getChannelNames().length,
-            cutoffFrequencies: [1, 30]}),
-          epoch({duration: this.manager.getSamplingRate(),
-            interval: 200, samplingRate: this.manager.getSamplingRate()})
-        )
-        .subscribe((packet) => {
+      this.dataSubscription = this.dataObservable.subscribe((packet) => {
           if (this.state.playing){
               if (this.correct) this.rightEpochs.push(packet);
               else              this.wrongEpochs.push(packet);
           }
-        });
+          this.eegSocket.send(JSON.stringify({date:Date.now(), packet}));
+      });
     }; //End this.startGame
+
   }//End constructor
 
   render()
@@ -142,6 +151,8 @@ export default class GameScreen extends React.Component<Props, State>
   {
     this.callbackIds.forEach(callbackId => clearInterval(callbackId));
     this.dataSubscription.unsubscribe();
+
+    this.eegSocket.close();
 
     console.log("RIGHT");
     console.log(JSON.stringify(this.rightEpochs));

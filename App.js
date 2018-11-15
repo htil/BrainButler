@@ -6,6 +6,7 @@ import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
 import {MuseDeviceManager} from "react-native-muse";
+import {Accelerometer, Gyroscope} from "react-native-sensors";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import GameScreen from "./GameScreen";
@@ -14,10 +15,27 @@ import MuseBanner from "./MuseBanner";
 import type {Subscription} from "rxjs";
 
 const museManager = MuseDeviceManager.getInstance();
-
 const museSubscription: Subscription = museManager.devices().subscribe(
 	(muses: Array<string>): void => {if (muses.length > 0) museManager.connect(muses[0]);}
 );
+
+
+const sensorSocket = new WebSocket("ws://10.127.232.192:8080");
+sensorSocket.onclose = function close(){console.log("disconnected");};
+sensorSocket.onopen = function open(){
+	console.log("connected");
+	startObserving();
+};
+
+async function startObserving()
+{
+  const observable = await new Gyroscope({updateInterval: 50});
+	observable.subscribe(({x, y, z}) => {
+		sensorSocket.send(JSON.stringify( {type:"gyroscope", date:Date.now(), data:{x, y, z}} ));
+	});
+}
+
+//startObserving();
 
 const styles = StyleSheet.create({
 	button:
