@@ -39,10 +39,10 @@ export default class ArticleScreen extends React.Component
 		{
 	    const paragraph: string = paragraphs[i];
 			if (i % 2 == 0) returnedJSX.push(
-				<View style={{flex:1}}><Text numberOfLines={5}>{paragraph}</Text></View>
+				<View key={i.toString()} style={{flex:1}}><Text numberOfLines={5}>{paragraph}</Text></View>
 			);
 			else returnedJSX.push(
-				<View style={{flex:1}}><Text>{paragraph}</Text></View>
+				<View key={i.toString()} style={{flex:1}}><Text>{paragraph}</Text></View>
 			);
 		}
 		return returnedJSX;
