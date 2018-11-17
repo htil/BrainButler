@@ -42,7 +42,7 @@ export default class MuseBanner extends React.Component<Props, State>
   }
   componentWillUnmount()
   {
-    this.subscription.unsubscribe();
+    if (this.subscription) this.subscription.unsubscribe();
   }
 
   //PRIVATE, INSTANCE

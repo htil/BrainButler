@@ -19,7 +19,6 @@ export default class ArticleScreen extends React.Component
 		}
 
 		this.darkenScreen = (): void => {
-			//const curr = SystemSetting.getAppBrightness();
 
 			SystemSetting.getAppBrightness().then((curr) =>{
   			const proposed = curr - 0.1;

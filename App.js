@@ -1,7 +1,7 @@
 "use strict";
 //React Modules
 import React from "react";
-import {Button, View, ScrollView, Text, StyleSheet, TouchableNativeFeedback} from "react-native";
+import {Button, View, ScrollView, Text, TouchableNativeFeedback} from "react-native";
 import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
@@ -9,53 +9,15 @@ import {MuseDeviceManager} from "react-native-muse";
 import {Accelerometer, Gyroscope} from "react-native-sensors";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
+import SetupScreen from "./SetupScreen";
 import GameScreen from "./GameScreen";
 import MuseBanner from "./MuseBanner";
+import Styles from "./Styles.js";
 
-import type {Subscription} from "rxjs";
-
-const museManager = MuseDeviceManager.getInstance();
-const museSubscription: Subscription = museManager.devices().subscribe(
-	(muses: Array<string>): void => {if (muses.length > 0) museManager.connect(muses[0]);}
-);
-
-
-const sensorSocket = new WebSocket("ws://10.127.232.192:8080");
-sensorSocket.onclose = function close(){console.log("disconnected");};
-sensorSocket.onopen = function open(){
-	console.log("connected");
-	startObserving();
-};
-
-async function startObserving()
-{
-  const observable = await new Gyroscope({updateInterval: 50});
-	observable.subscribe(({x, y, z}) => {
-		sensorSocket.send(JSON.stringify( {type:"gyroscope", date:Date.now(), data:{x, y, z}} ));
-	});
-}
-
-//startObserving();
-
-const styles = StyleSheet.create({
-	button:
-	{
-		flex: 1,
-		backgroundColor: "blue",
-		margin: 10
-	},
-	buttonText:
-	{
-		color: "white",
-		textAlign: "center",
-		fontSize: 24
-	}
-
-});
 
 class MenuScreen extends React.Component
 {
-  static navigationOptions = {headerTitle: <MuseBanner title="Main Menu"/>};
+  static navigationOptions = {title: "Main Menu"};
 
 	render()
 	{
@@ -64,20 +26,20 @@ class MenuScreen extends React.Component
 		return (
 			<View style={{flex: 1}}>
 			  <TouchableNativeFeedback onPress={()=>navigate("Odyssesy", {text: odyssesyText, title: "The Odyssesy"})}>
-				  <View style={styles.button}>
-					  <Text style={styles.buttonText}>Read the Odyssesy</Text>
+				  <View style={Styles.button}>
+					  <Text style={Styles.buttonText}>Read the Odyssesy</Text>
 				  </View>
 			  </TouchableNativeFeedback>
 
-				<TouchableNativeFeedback  onPress={()=>museManager.search()}>
-					<View style={styles.button}>
-						<Text style={styles.buttonText}>Search/Refresh</Text>
+				<TouchableNativeFeedback  onPress={()=>navigate("Game", {title: "Train BrainButler"})}>
+					<View style={Styles.button}>
+						<Text style={Styles.buttonText}>Train BrainButler</Text>
 					</View>
 				</TouchableNativeFeedback>
 
-				<TouchableNativeFeedback  onPress={()=>navigate("Game", {title: "Train BrainButler"})}>
-					<View style={styles.button}>
-						<Text style={styles.buttonText}>Train BrainButler</Text>
+				<TouchableNativeFeedback  onPress={()=>navigate("Setup", {title: "Setup"})}>
+					<View style={Styles.smallButton}>
+						<Text style={Styles.buttonText}>Researcher Options</Text>
 					</View>
 				</TouchableNativeFeedback>
 			</View>
@@ -89,14 +51,13 @@ const App = createStackNavigator(
 	{
 		Menu: {screen: MenuScreen},
 		Odyssesy: {screen: ArticleScreen},
-		Game: {screen: GameScreen}
+		Game: {screen: GameScreen},
+		Setup: {screen: SetupScreen}
 	},
 	{
-		initialRouteName: "Menu",
-		navigationOptions: ({navigation}) => {
-			return {headerTitle: <MuseBanner title={navigation.getParam("title", "")}/>};
-		}
-	}
+	 initialRouteName: "Menu",
+	 navigationOptions: ({navigation}) => {return {title: navigation.getParam("title", "")}},
+  }
 );
 
 export default App;
