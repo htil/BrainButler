@@ -6,6 +6,8 @@ import {MuseDeviceManager} from "react-native-muse";
 import {bandpassFilter, epoch} from "@neurosity/pipes";
 import type {Observable} from "rxjs";
 
+import Client from "./Client";
+
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
 
@@ -25,6 +27,7 @@ export default class GameScreen extends React.Component<Props, State>
   manager: MuseDeviceManager;
   correct: EquationState;
   dataObservable: Observable;
+  client: Client;
 
   constructor(props)
   {
@@ -44,10 +47,7 @@ export default class GameScreen extends React.Component<Props, State>
           interval: 200, samplingRate: this.manager.getSamplingRate()})
     );
 
-    this.eegSocket = new WebSocket("ws://10.122.192.226:8080");
-    this.eegSocket.onopen = function open(){console.log("connected");};
-    this.eegSocket.onclose = function close(){console.log("disconnected");};
-
+    this.client = Client.getInstance();
 
     this.startGame = () =>
     {
@@ -69,8 +69,8 @@ export default class GameScreen extends React.Component<Props, State>
           if (this.state.playing){
               if (this.correct) this.rightEpochs.push(packet);
               else              this.wrongEpochs.push(packet);
+              this.client.sendEEG(packet);
           }
-          this.eegSocket.send(JSON.stringify({date:Date.now(), packet}));
       });
     }; //End this.startGame
 
@@ -150,9 +150,7 @@ export default class GameScreen extends React.Component<Props, State>
   componentWillUnmount()
   {
     this.callbackIds.forEach(callbackId => clearInterval(callbackId));
-    this.dataSubscription.unsubscribe();
-
-    this.eegSocket.close();
+    if (this.dataSubscription) this.dataSubscription.unsubscribe();
 
     console.log("RIGHT");
     console.log(JSON.stringify(this.rightEpochs));
