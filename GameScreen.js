@@ -48,6 +48,7 @@ export default class GameScreen extends React.Component<Props, State>
     );
 
     this.client = Client.getInstance();
+    this.client.connect();
 
     this.startGame = () =>
     {

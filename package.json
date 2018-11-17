@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@neurosity/pipes": "git+file:/home/elmines/git/eeg-pipes#dev",
+    "brain-butler-schema": "0.0.1",
     "react": "^16.6.0",
     "react-native": "^0.57.3",
     "react-native-bci": "0.0.3",
