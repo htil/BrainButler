@@ -1,5 +1,10 @@
 import {StyleSheet} from "react-native";
 export default StyleSheet.create({
+	articleText:
+	{
+	  fontSize: 24,
+		padding: 20
+	},
 	button:
 	{
 		flex: 3,

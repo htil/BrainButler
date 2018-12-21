@@ -1,15 +1,29 @@
 //@flow
 import React from "react";
 import {View, ScrollView, Text, TouchableNativeFeedback, StyleSheet} from "react-native";
+import {Alert} from "react-native";
 import MuseBanner from "./MuseBanner";
+import Styles from "./Styles";
 import Orientation from "react-native-orientation";
 import SystemSetting from "react-native-system-setting";
 
-export default class ArticleScreen extends React.Component
+type Props = {};
+type State = {orientation: String};
+
+export default class ArticleScreen extends React.Component<Props, State>
 {
 	constructor(props)
 	{
 		super(props);
+
+		this.state = {orientation: Orientation.getInitialOrientation()};
+		this.orientListener = (orientation: String): void => {
+				this.setState((prev: State): State => {
+						return {orientation: orientation};
+				});
+		};
+		Orientation.addOrientationListener(this.orientListener);
+
 		this.rotate = (): void => {
 			Orientation.getOrientation((err, orientation) => {
 				if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
@@ -19,7 +33,6 @@ export default class ArticleScreen extends React.Component
 		}
 
 		this.darkenScreen = (): void => {
-
 			SystemSetting.getAppBrightness().then((curr) =>{
   			const proposed = curr - 0.1;
   			SystemSetting.setAppBrightness(proposed >= 0.1 ? proposed : 0.1);
@@ -34,15 +47,26 @@ export default class ArticleScreen extends React.Component
 			.filter(str => str.length > 0);
 
 		var returnedJSX = [];
+		var remainder: Number = (this.state.orientation == "LANDSCAPE") ? 1 : 0;
 		for (let i: number = 0; i < paragraphs.length; ++i)
 		{
+			if (i > 0)
+			{
+				returnedJSX.push(<View key={i.toString()+"A"} style={{flex:1}}><Text></Text></View>);
+			}
 	    const paragraph: string = paragraphs[i];
-			if (i % 2 == 0) returnedJSX.push(
-				<View key={i.toString()} style={{flex:1}}><Text numberOfLines={5}>{paragraph}</Text></View>
-			);
-			else returnedJSX.push(
-				<View key={i.toString()} style={{flex:1}}><Text>{paragraph}</Text></View>
-			);
+			if (i % 2 == remainder){
+        returnedJSX.push(
+				  <View key={i.toString()} style={{flex:1}}>
+				    <Text style={Styles.articleText} numberOfLines={5}>{paragraph}</Text>
+				  </View>);
+			}
+			else {
+				returnedJSX.push(
+				  <View key={i.toString()} style={{flex:1}}>
+				    <Text style={Styles.articleText}>{paragraph}</Text>
+				  </View>);
+	  	}
 		}
 		return returnedJSX;
 	}
@@ -57,6 +81,11 @@ export default class ArticleScreen extends React.Component
   			</ScrollView>
 			</View>
 		);
+	}
+
+	componentWillUnmount()
+	{
+		Orientation.removeOrientationListener(this.orientListener);
 	}
 }
 
