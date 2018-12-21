@@ -6,8 +6,6 @@ import {MuseDeviceManager} from "react-native-muse";
 import {bandpassFilter, epoch} from "@neurosity/pipes";
 import type {Observable} from "rxjs";
 
-import Client from "./Client";
-
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
 
@@ -19,20 +17,20 @@ export default class GameScreen extends React.Component<Props, State>
   static MIN_ERROR: number = 20;
   static MAX_ERROR: number = 30;
 
-  static MAX_TRIALS: number = 60; //30;
-  static INTERVAL: number = 1500 //Interval between equations in ms
+  static MAX_TRIALS: number = 120;
+  static INTERVAL: number = 1000 //Interval between equations in ms
 
   callbackIds: Array<number>;
   trialCount: number;
   manager: MuseDeviceManager;
   correct: EquationState;
   dataObservable: Observable;
-  client: Client;
 
   constructor(props)
   {
     super(props);
     this.state = {playing: false, finished: false, equation: "Error"};
+    this.currEpoch = [];
     this.rightEpochs = [];
     this.wrongEpochs = [];
     this.callbackIds = [];
@@ -43,19 +41,16 @@ export default class GameScreen extends React.Component<Props, State>
         bandpassFilter({
           nbChannels: this.manager.getChannelNames().length,
           cutoffFrequencies: [1, 30]}),
-        epoch({duration: this.manager.getSamplingRate(),
-          interval: 200, samplingRate: this.manager.getSamplingRate()})
     );
-
-    this.client = Client.getInstance();
-    this.client.connect();
 
     this.startGame = () =>
     {
+      this.currEpoch = [];
       this.trialCount = 0;
       this.displayEquation();
 
       const callbackID: number = setInterval((): void => {
+        this.saveEpoch();
         if (this.trialCount >= GameScreen.MAX_TRIALS)
         {
           this.setState((prev: State): State => {
@@ -67,15 +62,17 @@ export default class GameScreen extends React.Component<Props, State>
       this.callbackIds.push(callbackID);
 
       this.dataSubscription = this.dataObservable.subscribe((packet) => {
-          if (this.state.playing){
-              if (this.correct) this.rightEpochs.push(packet);
-              else              this.wrongEpochs.push(packet);
-              this.client.sendEEG(packet);
-          }
+          if (this.state.playing) this.currEpoch.push(packet);
       });
     }; //End this.startGame
-
   }//End constructor
+
+  saveEpoch()
+  {
+    if (this.correct) this.rightEpochs.push(this.currEpoch);
+    else              this.wrongEpochs.push(this.currEpoch);
+    this.currEpoch = [];
+  }
 
   render()
   {
