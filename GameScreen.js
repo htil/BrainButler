@@ -6,6 +6,8 @@ import {MuseDeviceManager} from "react-native-muse";
 import {bandpassFilter, epoch} from "@neurosity/pipes";
 import type {Observable} from "rxjs";
 
+import AppConfig from "./props.json";
+
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
 
@@ -17,25 +19,39 @@ export default class GameScreen extends React.Component<Props, State>
   static MIN_ERROR: number = 20;
   static MAX_ERROR: number = 30;
 
-  static MAX_TRIALS: number = 120;
+  static MAX_TRIALS: number = 20;
   static INTERVAL: number = 1000 //Interval between equations in ms
+
+  static BUFFER_SIZE: number = 256;
 
   callbackIds: Array<number>;
   trialCount: number;
   manager: MuseDeviceManager;
-  correct: EquationState;
+  correct: boolean;
   dataObservable: Observable;
 
   constructor(props)
   {
     super(props);
     this.state = {playing: false, finished: false, equation: "Error"};
-    this.currEpoch = [];
-    this.rightEpochs = [];
-    this.wrongEpochs = [];
     this.callbackIds = [];
+    this.buffer = [];
     this.manager = MuseDeviceManager.getInstance();
     this.trialCount = 0;
+
+    this.server_uri = `ws://${AppConfig.ip}:${AppConfig.port}`;
+    this.ws = new WebSocket(this.server_uri);
+    this.ws.onopen = () => {
+      console.log(`Connection to brain-butler-server opened at ${this.server_uri}`);
+    };
+
+    ///*
+    this.ws.send(JSON.stringify({
+        type: "header",
+        body: {
+          labels: ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"]
+        }
+    })); //*/
 
     this.dataObservable = this.manager.data().pipe(
         bandpassFilter({
@@ -50,7 +66,6 @@ export default class GameScreen extends React.Component<Props, State>
       this.displayEquation();
 
       const callbackID: number = setInterval((): void => {
-        this.saveEpoch();
         if (this.trialCount >= GameScreen.MAX_TRIALS)
         {
           this.setState((prev: State): State => {
@@ -62,16 +77,18 @@ export default class GameScreen extends React.Component<Props, State>
       this.callbackIds.push(callbackID);
 
       this.dataSubscription = this.dataObservable.subscribe((packet) => {
-          if (this.state.playing) this.currEpoch.push(packet);
+      this.sendDataPacket(packet);
       });
     }; //End this.startGame
   }//End constructor
 
-  saveEpoch()
-  {
-    if (this.correct) this.rightEpochs.push(this.currEpoch);
-    else              this.wrongEpochs.push(this.currEpoch);
-    this.currEpoch = [];
+  sendDataPacket(packet) {
+    const data = packet.data.concat(this.correct ? 0 : 1);
+    this.buffer.push(data);
+    if (this.buffer.length >= GameScreen.BUFFER_SIZE) {
+      this.ws.send(JSON.stringify( {type: "data", body: this.buffer} ));
+      this.buffer = [];
+    }
   }
 
   render()
@@ -150,10 +167,10 @@ export default class GameScreen extends React.Component<Props, State>
     this.callbackIds.forEach(callbackId => clearInterval(callbackId));
     if (this.dataSubscription) this.dataSubscription.unsubscribe();
 
-    console.log("RIGHT");
-    console.log(JSON.stringify(this.rightEpochs));
-    console.log("WRONG");
-    console.log(JSON.stringify(this.wrongEpochs));
+    this.ws.send(JSON.stringify({type: "eof"}));
+    console.log(`Closing connection to brain-butler-server at ${this.server_uri}`);
+    this.ws.close();
+
   }
 }
 
