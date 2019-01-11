@@ -11,6 +11,8 @@ import AppConfig from "./props.json";
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
 
+const MIN_FREQ: number = 1;
+const MAX_FREQ: number = 30;
 
 export default class GameScreen extends React.Component<Props, State>
 {
@@ -24,6 +26,7 @@ export default class GameScreen extends React.Component<Props, State>
   static INTERVAL: number = 1000 //Interval between equations in ms
 
   static BUFFER_SIZE: number = 256;
+
 
   callbackIds: Array<number>;
   trialCount: number;
@@ -45,7 +48,7 @@ export default class GameScreen extends React.Component<Props, State>
     this.dataObservable = this.manager.data().pipe(
         bandpassFilter({
           nbChannels: this.manager.getChannelNames().length,
-          cutoffFrequencies: [1, 30]}),
+          cutoffFrequencies: [MIN_FREQ, MAX_FREQ]}),
     );
   }
 
@@ -57,13 +60,22 @@ export default class GameScreen extends React.Component<Props, State>
       const labels = ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"];
       const sampleFrequency = labels.map(label => 256);
 
+      const dimStr = "uV";
+      let physicalDimension = labels.map(label => dimStr);
+      physicalDimension[physicalDimension.length - 1] = "None";
+
+      const prefilterStr = `[${MIN_FREQ},${MAX_FREQ}] Hz`;
+      let prefilter = labels.map(label => prefilterStr);
+      prefilter[prefilter.length - 1] = "None";
+
       const dateObj = new Date(Date.now());
       const startDate = edf_date(dateObj);
       const startTime = edf_time(dateObj);
 
       this.ws.send(JSON.stringify({
           type: "header", body: {
-            labels, sampleFrequency, startDate, startTime
+            labels, sampleFrequency, startDate, startTime, prefilter,
+            physicalDimension
           }
       }));
     };
