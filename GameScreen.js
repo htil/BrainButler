@@ -14,7 +14,7 @@ type State = {playing: boolean, finished: boolean, equation: string};
 export default class GameScreen extends React.Component<Props, State>
 {
   //state: equation
-  static PROB_WRONG: number = 0.5; //0.3; //Probability of showing an incorrect equation
+  static PROB_WRONG: number = 0.5; //Probability of showing an incorrect equation
   static MAX_OPERAND: number = 9;
   static MIN_ERROR: number = 20;
   static MAX_ERROR: number = 30;
@@ -40,47 +40,58 @@ export default class GameScreen extends React.Component<Props, State>
     this.trialCount = 0;
 
     this.server_uri = `ws://${AppConfig.ip}:${AppConfig.port}`;
-    this.ws = new WebSocket(this.server_uri);
-    this.ws.onopen = () => {
-      console.log(`Connection to brain-butler-server opened at ${this.server_uri}`);
-    };
-
-    ///*
-    this.ws.send(JSON.stringify({
-        type: "header",
-        body: {
-          labels: ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"]
-        }
-    })); //*/
 
     this.dataObservable = this.manager.data().pipe(
         bandpassFilter({
           nbChannels: this.manager.getChannelNames().length,
           cutoffFrequencies: [1, 30]}),
     );
+  }
 
-    this.startGame = () =>
-    {
-      this.currEpoch = [];
-      this.trialCount = 0;
-      this.displayEquation();
+  startGame() {
+    this.ws = new WebSocket(this.server_uri);
+    this.ws.onopen = () => {
+      console.log(`Connection to brain-butler-server opened at ${this.server_uri}`);
+      this.ws.send(JSON.stringify({
+          type: "header", body: {
+            labels: ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"]
+          }
+      }));
+    };
 
-      const callbackID: number = setInterval((): void => {
-        if (this.trialCount >= GameScreen.MAX_TRIALS)
-        {
-          this.setState((prev: State): State => {
-            return {playing:false, finished:true, equation: ""};
-          });
-        }
-        else this.displayEquation();
-      }, GameScreen.INTERVAL);
-      this.callbackIds.push(callbackID);
-
-      this.dataSubscription = this.dataObservable.subscribe((packet) => {
+    this.currEpoch = [];
+    this.trialCount = 0;
+    this.displayEquation();
+    const callbackID: number = setInterval((): void => {
+      if (this.trialCount >= GameScreen.MAX_TRIALS) this.endGame();
+      else this.displayEquation();
+    }, GameScreen.INTERVAL);
+    this.callbackIds.push(callbackID);
+    this.dataSubscription = this.dataObservable.subscribe((packet) => {
       this.sendDataPacket(packet);
-      });
-    }; //End this.startGame
-  }//End constructor
+    });
+  }
+
+  endGame() {
+    //Stop sending data before we close the WebSocket
+    if (this.dataSubscription) this.dataSubscription.unsubscribe();
+    this.dataSubscription = null;
+
+    if (this.ws) {
+      this.ws.send(JSON.stringify({type: "eof"}));
+      console.log(`Closing connection to brain-butler-server at ${this.server_uri}`);
+      this.ws.close();
+      this.ws = null;
+    }
+
+    this.setState((prev: State): State => {
+      return {playing:false, finished:true, equation: ""};
+    });
+
+
+    this.callbackIds.forEach(callbackId => clearInterval(callbackId));
+    this.callbackIds = [];
+  }
 
   sendDataPacket(packet) {
     const data = packet.data.concat(this.correct ? 0 : 1);
@@ -119,7 +130,7 @@ export default class GameScreen extends React.Component<Props, State>
             </Text>
           </View>
         <View style={{flex:1}}></View>
-        <ChoiceButton text="OK" onPress={this.startGame}/>
+        <ChoiceButton text="OK" onPress={ () => {this.startGame()} }/>
       </View>
     );
   }
@@ -164,13 +175,7 @@ export default class GameScreen extends React.Component<Props, State>
 
   componentWillUnmount()
   {
-    this.callbackIds.forEach(callbackId => clearInterval(callbackId));
-    if (this.dataSubscription) this.dataSubscription.unsubscribe();
-
-    this.ws.send(JSON.stringify({type: "eof"}));
-    console.log(`Closing connection to brain-butler-server at ${this.server_uri}`);
-    this.ws.close();
-
+    this.endGame();
   }
 }
 
