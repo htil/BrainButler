@@ -11,6 +11,7 @@ import AppConfig from "./props.json";
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
 
+
 export default class GameScreen extends React.Component<Props, State>
 {
   //state: equation
@@ -19,7 +20,7 @@ export default class GameScreen extends React.Component<Props, State>
   static MIN_ERROR: number = 20;
   static MAX_ERROR: number = 30;
 
-  static MAX_TRIALS: number = 20;
+  static MAX_TRIALS: number = 15;
   static INTERVAL: number = 1000 //Interval between equations in ms
 
   static BUFFER_SIZE: number = 256;
@@ -52,9 +53,17 @@ export default class GameScreen extends React.Component<Props, State>
     this.ws = new WebSocket(this.server_uri);
     this.ws.onopen = () => {
       console.log(`Connection to brain-butler-server opened at ${this.server_uri}`);
+
+      const labels = ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"];
+      const sampleFrequency = labels.map(label => 256);
+
+      const dateObj = new Date(Date.now());
+      const startDate = edf_date(dateObj);
+      const startTime = edf_time(dateObj);
+
       this.ws.send(JSON.stringify({
           type: "header", body: {
-            labels: ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"]
+            labels, sampleFrequency, startDate, startTime
           }
       }));
     };
@@ -177,6 +186,24 @@ export default class GameScreen extends React.Component<Props, State>
   {
     this.endGame();
   }
+}
+
+function edf_date(date) {
+        let day = new String(date.getDate());
+        let month = new String(date.getMonth() + 1);
+        let year = new String(date.getFullYear());
+        day = (day.length < 2) ? "0"+day : day;
+        month = (month.length < 2) ? "0"+month : month;
+        return `${day}.${month}.${year}`;
+}
+function edf_time(date) {
+        let hour = new String(date.getHours());
+        let minute = new String(date.getMinutes());
+        let second = new String(date.getSeconds());
+        hour =   (hour.length < 2)   ? "0"+hour   : hour;
+        minute = (minute.length < 2) ? "0"+minute : minute;
+        second = (second.length < 2) ? "0"+second : second;
+        return `${hour}.${minute}.${second}`;
 }
 
 class ChoiceButton extends React.Component
