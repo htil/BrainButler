@@ -6,7 +6,7 @@ import {MuseDeviceManager} from "react-native-muse";
 import {bandpassFilter, epoch} from "@neurosity/pipes";
 import type {Observable} from "rxjs";
 
-import AppConfig from "./props.json";
+import BBSocket from "./BBSocket.js";
 
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
@@ -30,9 +30,9 @@ export default class GameScreen extends React.Component<Props, State>
 
   callbackIds: Array<number>;
   trialCount: number;
-  manager: MuseDeviceManager;
   correct: boolean;
   dataObservable: Observable;
+  socket: BBSocket;
 
   constructor(props)
   {
@@ -40,23 +40,19 @@ export default class GameScreen extends React.Component<Props, State>
     this.state = {playing: false, finished: false, equation: "Error"};
     this.callbackIds = [];
     this.buffer = [];
-    this.manager = MuseDeviceManager.getInstance();
     this.trialCount = 0;
 
-    this.server_uri = `ws://${AppConfig.ip}:${AppConfig.port}`;
-
-    this.dataObservable = this.manager.data().pipe(
+    const museManager = MuseDeviceManager.getInstance();
+    this.dataObservable = museManager.data().pipe(
         bandpassFilter({
-          nbChannels: this.manager.getChannelNames().length,
+          nbChannels: museManager.getChannelNames().length,
           cutoffFrequencies: [MIN_FREQ, MAX_FREQ]}),
     );
+    this.socket = null; //Initialized in startGame()
   }
 
   startGame() {
-    this.ws = new WebSocket(this.server_uri);
-    this.ws.onopen = () => {
-      console.log(`Connection to brain-butler-server opened at ${this.server_uri}`);
-
+    const onOpen: () => void = () => {
       const labels = ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"];
       const sampleFrequency = labels.map(label => 256);
 
@@ -72,13 +68,15 @@ export default class GameScreen extends React.Component<Props, State>
       const startDate = edf_date(dateObj);
       const startTime = edf_time(dateObj);
 
-      this.ws.send(JSON.stringify({
+      this.socket.send(JSON.stringify({
           type: "header", body: {
             labels, sampleFrequency, startDate, startTime, prefilter,
             physicalDimension
           }
       }));
     };
+    this.socket = BBSocket.getInstance();
+    this.socket.open(onOpen);
 
     this.currEpoch = [];
     this.trialCount = 0;
@@ -98,11 +96,11 @@ export default class GameScreen extends React.Component<Props, State>
     if (this.dataSubscription) this.dataSubscription.unsubscribe();
     this.dataSubscription = null;
 
-    if (this.ws) {
-      this.ws.send(JSON.stringify({type: "eof"}));
-      console.log(`Closing connection to brain-butler-server at ${this.server_uri}`);
-      this.ws.close();
-      this.ws = null;
+    if (this.socket) {
+      this.socket.send(JSON.stringify({type: "eof"}));
+
+      this.socket.close();
+      this.socket = null;
     }
 
     this.setState((prev: State): State => {
@@ -118,7 +116,7 @@ export default class GameScreen extends React.Component<Props, State>
     const data = packet.data.concat(this.correct ? 0 : 1);
     this.buffer.push(data);
     if (this.buffer.length >= GameScreen.BUFFER_SIZE) {
-      this.ws.send(JSON.stringify( {type: "data", body: this.buffer} ));
+      this.socket.send(JSON.stringify( {type: "data", body: this.buffer} ));
       this.buffer = [];
     }
   }
