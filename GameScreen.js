@@ -7,6 +7,7 @@ import {bandpassFilter, epoch} from "@neurosity/pipes";
 import type {Observable} from "rxjs";
 
 import BBSocket from "./BBSocket.js";
+import Config, {edfHeader} from "./Config.js";
 
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
@@ -46,37 +47,25 @@ export default class GameScreen extends React.Component<Props, State>
     this.dataObservable = museManager.data().pipe(
         bandpassFilter({
           nbChannels: museManager.getChannelNames().length,
-          cutoffFrequencies: [MIN_FREQ, MAX_FREQ]}),
+          cutoffFrequencies: [Config.highpass, Config.lowpass]}),
     );
     this.socket = null; //Initialized in startGame()
   }
 
   startGame() {
-    const onOpen: () => void = () => {
-      const labels = ["EEG1", "EEG2", "EEG3", "EEG4", "ErrorStimulusPresent"];
-      const sampleFrequency = labels.map(label => 256);
+    var header = edfHeader();
+    header.labels.push("ErrorStimulusPresent");
+    const otherFreq = header.sampleFrequency[
+      header.sampleFrequency.length - 1
+    ];
+    header.sampleFrequency.push(otherFreq);
+    header.prefilter.push("None");
+    header.physicalDimension.push("None");
 
-      const dimStr = "uV";
-      let physicalDimension = labels.map(label => dimStr);
-      physicalDimension[physicalDimension.length - 1] = "None";
-
-      const prefilterStr = `[${MIN_FREQ},${MAX_FREQ}] Hz`;
-      let prefilter = labels.map(label => prefilterStr);
-      prefilter[prefilter.length - 1] = "None";
-
-      const dateObj = new Date(Date.now());
-      const startDate = edf_date(dateObj);
-      const startTime = edf_time(dateObj);
-
-      this.socket.send(JSON.stringify({
-          type: "header", body: {
-            labels, sampleFrequency, startDate, startTime, prefilter,
-            physicalDimension
-          }
-      }));
-    };
     this.socket = BBSocket.getInstance();
-    this.socket.open(onOpen);
+    this.socket.open(() => {
+      this.socket.send(JSON.stringify({type: "header", body: header}));
+    });
 
     this.currEpoch = [];
     this.trialCount = 0;

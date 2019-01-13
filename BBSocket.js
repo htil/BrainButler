@@ -1,5 +1,5 @@
 //@flow
-import AppConfig from "./props.json";
+import Config from "./Config.js";
 
 export default class BBSocket {
 
@@ -13,7 +13,7 @@ export default class BBSocket {
   open(onopen: () => void) {
     if (this.ws) this.close();
 
-    this.serverUri = `ws://${AppConfig.ip}:${AppConfig.port}`;
+    this.serverUri = Config.serverUri;
     this.ws = new WebSocket(this.serverUri);
     this.ws.onopen = onopen;
     console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
