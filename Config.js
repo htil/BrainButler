@@ -24,7 +24,7 @@ export default settings = {
     highpass: 1,
     lowpass: 30,
     labPrefix: "HTIL",
-    patientId: "0",
+    patientNumber: "0",
     serverUri: `ws://${props.ip}:${props.port}`
 }
 export function edfHeader() {
@@ -38,6 +38,8 @@ export function edfHeader() {
     const startDate = edfDate(dateObj);
     const startTime = edfTime(dateObj);
 
+    const patientCode = `${settings.labPrefix}-${settings.patientNumber}`;
+
     return {labels, sampleFrequency, startDate,
-      startTime, prefilter, physicalDimension};
+      startTime, prefilter, physicalDimension, patientCode};
 }
