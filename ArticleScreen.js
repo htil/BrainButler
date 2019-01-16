@@ -2,10 +2,15 @@
 import React from "react";
 import {View, ScrollView, Text, TouchableNativeFeedback, StyleSheet} from "react-native";
 import {Alert} from "react-native";
-import MuseBanner from "./MuseBanner";
-import Styles from "./Styles";
 import Orientation from "react-native-orientation";
 import SystemSetting from "react-native-system-setting";
+
+import {merge} from "rxjs";
+
+import Config from "./Config.js";
+import MuseBanner from "./MuseBanner";
+import Styles from "./Styles";
+import {eegObservable, accObservable, gyroObservable} from "./Streaming.js";
 
 type Props = {};
 type State = {orientation: String};
@@ -16,6 +21,12 @@ export default class ArticleScreen extends React.Component<Props, State>
 	{
 		super(props);
 
+		this.eegBuffer = [];
+		this.orientBuffer = [];
+		this.gyroBuffer = [];
+		this.accBuffer = [];
+		this.subscriptions = [];
+
 		this.state = {orientation: Orientation.getInitialOrientation()};
 		this.orientListener = (orientation: String): void => {
 				this.setState((prev: State): State => {
@@ -23,6 +34,31 @@ export default class ArticleScreen extends React.Component<Props, State>
 				});
 		};
 		Orientation.addOrientationListener(this.orientListener);
+
+		this.subscriptions.push( eegObservable.subscribe((packet) => {
+			this.eegBuffer.push(packet);
+			if (Config.sampleFrequency <= this.eegBuffer.length)
+			{
+				//console.log(`EEG Buffer length = ${this.eegBuffer.length}`);
+				this.eegBuffer = [];
+			}
+		}));
+
+		this.subscriptions.push( gyroObservable.subscribe((packet) => {
+			this.gyroBuffer.push(packet);
+			if (Config.sampleFrequency <= this.gyroBuffer.length)
+			{
+				this.gyroBuffer = [];
+			}
+		}));
+
+		this.subscriptions.push( accObservable.subscribe((packet) => {
+			this.accBuffer.push(packet);
+			if (Config.sampleFrequency <= this.accBuffer.length)
+			{
+				this.accBuffer = [];
+			}
+		}));
 
 		this.rotate = (): void => {
 			Orientation.getOrientation((err, orientation) => {
@@ -85,24 +121,14 @@ export default class ArticleScreen extends React.Component<Props, State>
 
 	componentWillUnmount()
 	{
-		Orientation.removeOrientationListener(this.orientListener);
-	}
-}
+		console.log("Unsubscribing the observers . . .");
+		this.subscriptions.forEach(subscription => subscription.unsubscribe());
+		console.log("Unsubscribed.");
+		this.subscriptions = [];
 
-class Button extends TouchableNativeFeedback
-{
-  //Props: onPress, text, style
-  render()
-  {
-		const style = styles.button;
-    return (
-      <TouchableNativeFeedback style={{flex: 1}} onPress={this.props.onPress}>
-        <View style={style}>
-          <Text style={styles.buttonText}>{this.props.text}</Text>
-        </View>
-      </TouchableNativeFeedback>
-    );
-  }
+		Orientation.removeOrientationListener(this.orientListener);
+		console.log("Unmounted component");
+	}
 }
 
 const styles = StyleSheet.create({

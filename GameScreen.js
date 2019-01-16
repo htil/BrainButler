@@ -2,12 +2,11 @@
 import React from "react";
 import {View, Text, StyleSheet, DeviceEventEmitter} from "react-native";
 import {TouchableNativeFeedback} from "react-native";
-import {MuseDeviceManager} from "react-native-muse";
-import {bandpassFilter, epoch} from "@neurosity/pipes";
 import type {Observable} from "rxjs";
 
 import BBSocket from "./BBSocket.js";
 import Config, {edfHeader} from "./Config.js";
+import {eegObservable} from "./Streaming.js";
 
 type Props = {};
 type State = {playing: boolean, finished: boolean, equation: string};
@@ -23,7 +22,7 @@ export default class GameScreen extends React.Component<Props, State>
   static MIN_ERROR: number = 20;
   static MAX_ERROR: number = 30;
 
-  static MAX_TRIALS: number = 15;
+  static MAX_TRIALS: number = 180;
   static INTERVAL: number = 1000 //Interval between equations in ms
 
   static BUFFER_SIZE: number = 256;
@@ -43,12 +42,7 @@ export default class GameScreen extends React.Component<Props, State>
     this.buffer = [];
     this.trialCount = 0;
 
-    const museManager = MuseDeviceManager.getInstance();
-    this.dataObservable = museManager.data().pipe(
-        bandpassFilter({
-          nbChannels: museManager.getChannelNames().length,
-          cutoffFrequencies: [Config.highpass, Config.lowpass]}),
-    );
+    this.dataObservable = eegObservable;
     this.socket = null; //Initialized in startGame()
   }
 

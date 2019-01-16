@@ -21,6 +21,7 @@ function edfTime(date) {
 }
 
 export default settings = {
+    sampleFrequency: 256,
     highpass: 1,
     lowpass: 30,
     labPrefix: "HTIL",
@@ -29,7 +30,7 @@ export default settings = {
 }
 export function edfHeader() {
     const labels = ["EEG1", "EEG2", "EEG3", "EEG4"];
-    const sampleFrequency = labels.map(label => 256);
+    const sampleFrequency = labels.map(label => settings.sampleFrequency);
     const prefilter = labels.map(
       label => `HP:${settings.highpass}Hz LP:${settings.lowpass}Hz`);
     const physicalDimension = labels.map(label => "uV");
