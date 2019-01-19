@@ -18,8 +18,12 @@ export const eegObservable: Observable = manager.data().pipe(
   }),
 );
 
-setUpdateIntervalForType(SensorTypes.accelerometer, 4 *  1000./Config.sampleFrequency);
+setUpdateIntervalForType(SensorTypes.accelerometer, 4 * 1000./Config.sampleFrequency);
 setUpdateIntervalForType(SensorTypes.gyroscope, 4 * 1000./Config.sampleFrequency);
 
-export const accObservable = accelerometer;
-export const gyroObservable = gyroscope;
+export const accObservable = accelerometer.pipe(
+  map(({x, y, z}) => {return {accX: x, accY: y, accZ: z};})
+);
+export const gyroObservable = gyroscope.pipe(
+  map(({x, y, z}) => {return {gyroX: x, gyroY: y, gyroZ: z};})
+);

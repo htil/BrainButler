@@ -8,6 +8,7 @@ import SystemSetting from "react-native-system-setting";
 import {merge} from "rxjs";
 
 import Config from "./Config.js";
+import BBSocket from "./BBSocket.js";
 import MuseBanner from "./MuseBanner";
 import Styles from "./Styles";
 import {eegObservable, accObservable, gyroObservable} from "./Streaming.js";
@@ -20,6 +21,7 @@ export default class ArticleScreen extends React.Component<Props, State>
 	constructor(props)
 	{
 		super(props);
+		this.state = {orientation: Orientation.getInitialOrientation()};
 
 		this.eegBuffer = [];
 		this.orientBuffer = [];
@@ -27,11 +29,19 @@ export default class ArticleScreen extends React.Component<Props, State>
 		this.accBuffer = [];
 		this.subscriptions = [];
 
-		this.state = {orientation: Orientation.getInitialOrientation()};
+		this.socket = BBSocket.getInstance();
+		this.socket.open(() => {
+			this.socket.send(JSON.stringify({type: "header", body: {}}));
+		});
+
 		this.orientListener = (orientation: String): void => {
+				const timestamp = Date.now();
 				this.setState((prev: State): State => {
 						return {orientation: orientation};
 				});
+				this.socket.send(JSON.stringify(
+					{type: "rotation", body: {orientation, timestamp}}
+				));
 		};
 		Orientation.addOrientationListener(this.orientListener);
 
@@ -39,41 +49,52 @@ export default class ArticleScreen extends React.Component<Props, State>
 			this.eegBuffer.push(packet);
 			if (Config.sampleFrequency <= this.eegBuffer.length)
 			{
-				//console.log(`EEG Buffer length = ${this.eegBuffer.length}`);
+				this.socket.send(JSON.stringify({type: "eeg", body: this.eegBuffer}));
 				this.eegBuffer = [];
 			}
 		}));
-
 		this.subscriptions.push( gyroObservable.subscribe((packet) => {
 			this.gyroBuffer.push(packet);
 			if (Config.sampleFrequency <= this.gyroBuffer.length)
 			{
+				this.socket.send(JSON.stringify({type: "gyro", body: this.gyroBuffer}));
 				this.gyroBuffer = [];
 			}
 		}));
-
 		this.subscriptions.push( accObservable.subscribe((packet) => {
 			this.accBuffer.push(packet);
 			if (Config.sampleFrequency <= this.accBuffer.length)
 			{
+				this.socket.send(JSON.stringify({type: "acc", body: this.accBuffer}));
 				this.accBuffer = [];
 			}
 		}));
 
-		this.rotate = (): void => {
+		setInterval(() => {this.darkenScreen()}, 5000);
+
+	}
+
+	static rotate() {
 			Orientation.getOrientation((err, orientation) => {
 				if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
 				else                            Orientation.lockToLandscape();
 				Orientation.unlockAllOrientations();
 			});
-		}
 
-		this.darkenScreen = (): void => {
+	}
+
+	darkenScreen() {
 			SystemSetting.getAppBrightness().then((curr) =>{
   			const proposed = curr - 0.1;
-  			SystemSetting.setAppBrightness(proposed >= 0.1 ? proposed : 0.1);
+				const newSetting = proposed >= 0.1 ? proposed : 0.1;
+				if ( ! (newSetting >= curr) ) {
+					const timestamp = Date.now();
+					this.socket.send(JSON.stringify(
+						{type: "brightness", body: {timestamp, brightness: newSetting}}
+					));
+				}
+  			SystemSetting.setAppBrightness(newSetting);
 			});
-		};
 	}
 
 	awkParagraphs(text: string)
@@ -125,6 +146,9 @@ export default class ArticleScreen extends React.Component<Props, State>
 		this.subscriptions.forEach(subscription => subscription.unsubscribe());
 		console.log("Unsubscribed.");
 		this.subscriptions = [];
+
+    this.socket.send(JSON.stringify({type: "eof"}));
+		this.socket.close();
 
 		Orientation.removeOrientationListener(this.orientListener);
 		console.log("Unmounted component");

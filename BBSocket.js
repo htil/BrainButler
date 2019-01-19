@@ -10,7 +10,7 @@ export default class BBSocket {
   }
 
   //PUBLIC, INSTANCE
-  open(onopen: () => void) {
+  open(onopen?: () => void) {
     if (this.ws) this.close();
 
     this.serverUri = Config.serverUri;
