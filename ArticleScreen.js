@@ -22,12 +22,14 @@ export default class ArticleScreen extends React.Component<Props, State>
 	{
 		super(props);
 		this.state = {orientation: Orientation.getInitialOrientation()};
+    SystemSetting.setAppBrightness(Config.initialBrightness);
 
 		this.eegBuffer = [];
 		this.orientBuffer = [];
 		this.gyroBuffer = [];
 		this.accBuffer = [];
 		this.subscriptions = [];
+		this.callbackIds = [];
 
 		this.socket = BBSocket.getInstance();
 		this.socket.open(() => {
@@ -40,7 +42,7 @@ export default class ArticleScreen extends React.Component<Props, State>
 						return {orientation: orientation};
 				});
 				this.socket.send(JSON.stringify(
-					{type: "rotation", body: {orientation, timestamp}}
+					{type: "event", body: {eventName: "rotation", orientation, timestamp}}
 				));
 		};
 		Orientation.addOrientationListener(this.orientListener);
@@ -49,28 +51,12 @@ export default class ArticleScreen extends React.Component<Props, State>
 			this.eegBuffer.push(packet);
 			if (Config.sampleFrequency <= this.eegBuffer.length)
 			{
-				this.socket.send(JSON.stringify({type: "eeg", body: this.eegBuffer}));
+				this.socket.send(JSON.stringify({type: "data", body: this.eegBuffer}));
 				this.eegBuffer = [];
 			}
 		}));
-		this.subscriptions.push( gyroObservable.subscribe((packet) => {
-			this.gyroBuffer.push(packet);
-			if (Config.sampleFrequency <= this.gyroBuffer.length)
-			{
-				this.socket.send(JSON.stringify({type: "gyro", body: this.gyroBuffer}));
-				this.gyroBuffer = [];
-			}
-		}));
-		this.subscriptions.push( accObservable.subscribe((packet) => {
-			this.accBuffer.push(packet);
-			if (Config.sampleFrequency <= this.accBuffer.length)
-			{
-				this.socket.send(JSON.stringify({type: "acc", body: this.accBuffer}));
-				this.accBuffer = [];
-			}
-		}));
 
-		setInterval(() => {this.darkenScreen()}, 5000);
+		this.callbackIds.push( setInterval(() => {this.darkenScreen()}, 5000) );
 
 	}
 
@@ -85,12 +71,12 @@ export default class ArticleScreen extends React.Component<Props, State>
 
 	darkenScreen() {
 			SystemSetting.getAppBrightness().then((curr) =>{
-  			const proposed = curr - 0.1;
+  			const proposed = curr - 0.2;
 				const newSetting = proposed >= 0.1 ? proposed : 0.1;
-				if ( ! (newSetting >= curr) ) {
+				if ( newSetting < curr ) {
 					const timestamp = Date.now();
 					this.socket.send(JSON.stringify(
-						{type: "brightness", body: {timestamp, brightness: newSetting}}
+						{type: "event", body: {eventName: "brightness", timestamp, brightness: newSetting}}
 					));
 				}
   			SystemSetting.setAppBrightness(newSetting);
@@ -142,16 +128,17 @@ export default class ArticleScreen extends React.Component<Props, State>
 
 	componentWillUnmount()
 	{
-		console.log("Unsubscribing the observers . . .");
+		Orientation.removeOrientationListener(this.orientListener);
 		this.subscriptions.forEach(subscription => subscription.unsubscribe());
-		console.log("Unsubscribed.");
 		this.subscriptions = [];
+
+		this.callbackIds.forEach(callbackId => clearInterval(callbackId));
+		this.callbackIds = [];
 
     this.socket.send(JSON.stringify({type: "eof"}));
 		this.socket.close();
 
-		Orientation.removeOrientationListener(this.orientListener);
-		console.log("Unmounted component");
+		this.props.navigation.state.params.refresh();
 	}
 }
 

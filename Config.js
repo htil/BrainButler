@@ -21,6 +21,7 @@ function edfTime(date) {
 }
 
 export default settings = {
+    initialBrightness: 1.0,
     sampleFrequency: 256,
     highpass: 1,
     lowpass: 30,

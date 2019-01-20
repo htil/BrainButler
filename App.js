@@ -5,14 +5,14 @@ import {Button, View, ScrollView, Text, TouchableNativeFeedback} from "react-nat
 import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
-import {MuseDeviceManager} from "react-native-muse";
-import {Accelerometer, Gyroscope} from "react-native-sensors";
+import SystemSetting from "react-native-system-setting";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import SetupScreen from "./SetupScreen";
 import GameScreen from "./GameScreen";
 import MuseBanner from "./MuseBanner";
 import Styles from "./Styles.js";
+import Config from "./Config.js";
 
 
 class MenuScreen extends React.Component
@@ -21,11 +21,17 @@ class MenuScreen extends React.Component
 
 	render()
 	{
+    SystemSetting.setAppBrightness(Config.initialBrightness);
+
 		const odyssesyText = require("./odyssesy");
 		const navigate = this.props.navigation.navigate;
 		return (
 			<View style={{flex: 1}}>
-			  <TouchableNativeFeedback onPress={()=>navigate("Odyssesy", {text: odyssesyText, title: "The Odyssesy"})}>
+			  <TouchableNativeFeedback onPress={
+          ()=>navigate("Odyssesy",
+            {refresh:()=>{SystemSetting.setAppBrightness(Config.initialBrightness);},
+              text: odyssesyText, title: "The Odyssesy"}
+        )}>
 				  <View style={Styles.button}>
 					  <Text style={Styles.buttonText}>Read the Odyssesy</Text>
 				  </View>
