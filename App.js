@@ -29,7 +29,7 @@ class MenuScreen extends React.Component
 			<View style={{flex: 1}}>
 			  <TouchableNativeFeedback onPress={
           ()=>navigate("Odyssesy",
-            {refresh:()=>{SystemSetting.setAppBrightness(Config.initialBrightness);},
+            {refresh:()=>{SystemSetting.setAppBrightness(Config.brightness.full);},
               text: odyssesyText, title: "The Odyssesy"}
         )}>
 				  <View style={Styles.button}>

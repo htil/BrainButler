@@ -15,7 +15,7 @@ function negativeResponse() {}
 
 function brightenScreen() {
 	 SystemSetting.getAppBrightness().then((curr) => {
-		 SystemSetting.setAppBrightness(Config.initialBrightness);
+		 SystemSetting.setAppBrightness(Config.brightness.full);
 
      Alert.alert(title, brightenMessage,
        [

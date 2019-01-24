@@ -7,6 +7,7 @@ import SystemSetting from "react-native-system-setting";
 
 import {merge} from "rxjs";
 
+import Agent from "./Agent";
 import Config from "./Config.js";
 import BBSocket from "./BBSocket.js";
 import MuseBanner from "./MuseBanner";
@@ -25,15 +26,35 @@ export default class ArticleScreen extends React.Component<Props, State>
     SystemSetting.setAppBrightness(Config.initialBrightness);
 
 		this.eegBuffer = [];
-		this.orientBuffer = [];
-		this.gyroBuffer = [];
-		this.accBuffer = [];
 		this.subscriptions = [];
 		this.callbackIds = [];
 
 		this.socket = BBSocket.getInstance();
+
+ 		this.subscriptions.push(this.socket.actions().subscribe((action) => {
+			console.log("Received action "+action);
+			if (action == "brighten"){
+					Agent.brightenScreen();
+			}
+		}));
+
 		this.socket.open(() => {
 			this.socket.send(JSON.stringify({type: "header", body: {}}));
+
+			Orientation.getOrientation((err, orientation) => {
+				this.socket.send(JSON.stringify({
+					type: "event",
+					body: {eventName: "rotation", orientation, timestamp: Date.now()}
+				}));
+			});
+
+			SystemSetting.getAppBrightness().then((curr) => {
+				this.socket.send(JSON.stringify({
+					type: "event",
+					body: {eventName: "brightness", brightness: curr, timestamp: Date.now()}
+				}));
+			});
+
 		});
 
 		this.orientListener = (orientation: String): void => {
@@ -71,8 +92,13 @@ export default class ArticleScreen extends React.Component<Props, State>
 
 	darkenScreen() {
 			SystemSetting.getAppBrightness().then((curr) =>{
-  			const proposed = curr - 0.2;
-				const newSetting = proposed >= 0.1 ? proposed : 0.1;
+
+				let newSetting = curr;
+				if (curr == Config.brightness.full)
+					newSetting = Config.brightness.medium;
+				else if (curr == Config.brightness.medium)
+					newSetting = Config.brightness.low;
+
 				if ( newSetting < curr ) {
 					const timestamp = Date.now();
 					this.socket.send(JSON.stringify(

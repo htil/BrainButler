@@ -1,4 +1,7 @@
 //@flow
+import {DeviceEventEmitter} from "react-native";
+import {fromEvent} from "rxjs";
+
 import Config from "./Config.js";
 
 export default class BBSocket {
@@ -17,6 +20,10 @@ export default class BBSocket {
     this.ws = new WebSocket(this.serverUri);
     this.ws.onopen = onopen;
     console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
+
+    this.ws.onmessage = (message) => {
+        DeviceEventEmitter.emit("BBAction", JSON.parse(message.data).action );
+    }
   }
   send(packet) {
       this.ws.send(packet);
@@ -27,6 +34,8 @@ export default class BBSocket {
       this.ws = null;
   }
 
+  actions() {return this.actionObservable;}
+
   //PRIVATE, STATIC
   static instance: BBSocket = null;
 
@@ -34,6 +43,7 @@ export default class BBSocket {
   constructor() {
     this.ws = null;
     this.serverUri = null;
+    this.actionObservable = fromEvent(DeviceEventEmitter, "BBAction");
   }
 
   ws: Websocket;
