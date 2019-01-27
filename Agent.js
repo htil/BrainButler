@@ -21,7 +21,7 @@ export default class Agent {
 		this.orientListener = (orientation: String): void => {
         orientation = orientation.toLowerCase();
 				this.socket.send(JSON.stringify({type: "event",
-          body: {eventName: "rotation", orientation, timestamp: Date.now()
+          body: {eventName: "orientation", orientation, timestamp: Date.now()
         }}));
 		};
 		Orientation.addOrientationListener(this.orientListener);
@@ -35,10 +35,10 @@ export default class Agent {
 			}
 		}));
 
- 		this.subscriptions.push(this.socket.actions().subscribe((action) => {
-			console.log("Received action "+action);
-			if      (action == "brighten") this._brighten();
-			else if (action == "rotate")   this._rotate();
+ 		this.subscriptions.push(this.socket.actions().subscribe( ({id, action}) => {
+      console.log(`Taking action ${action}`);
+			if      (action == "brighten") this._brighten(id);
+			else if (action == "rotate")   this._rotate(id);
 		}));
 
 		this.callbackIds.push( setInterval(() => {this._darkenScreen()}, 10000) );
@@ -96,36 +96,31 @@ export default class Agent {
 			});
 	}
 
-  _rotate() {
+  _rotate(id) {
 	  Orientation.getOrientation((err, orientation) => {
 		  if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
 		  else                            Orientation.lockToLandscape();
 		  Orientation.unlockAllOrientations();
-      this._notify(title, rotateMessage);
+      this._notify(title, rotateMessage, id);
     });
   }
 
 
-  _brighten() {
+  _brighten(id) {
 	   SystemSetting.getAppBrightness().then((curr) => {
 		     SystemSetting.setAppBrightness(Config.brightness.full);
-         this._notify(title, brightenMessage);
+         this._notify(title, brightenMessage, id);
 	   });
   }
 
-  _notify(title, message) {
-     Alert.alert(title, message,[
-         {text: "Thanks",    onPress: () => {this._thank();} },
-         {text: "No Thanks", onPress: () => {this._noThank();} }
-     ]);
-   }
-
-   _thank() {
-
-   }
-
-   _noThank() {
-
+  _notify(title, message, id) {
+     Alert.alert(title, message,
+       [
+         {text: "Thanks",    onPress: () => {this.socket.reward(id, 2);} },
+         {text: "No Thanks", onPress: () => {this.socket.reward(id, -1);} }
+       ],
+       {cancelable: false}
+     );
    }
 } //End class
 

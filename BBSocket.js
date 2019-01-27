@@ -22,7 +22,7 @@ export default class BBSocket {
     console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
 
     this.ws.onmessage = (message) => {
-        DeviceEventEmitter.emit("BBAction", JSON.parse(message.data).action );
+        DeviceEventEmitter.emit("BBAction", JSON.parse(message.data));
     }
   }
   send(packet) {
@@ -32,6 +32,10 @@ export default class BBSocket {
       console.log(`Closing connection to brain-butler-server at ${this.serverUri}`);
       this.ws.close();
       this.ws = null;
+  }
+
+  reward(id, r) {
+      this.ws.send(JSON.stringify({type: "reward", body: {id, r}}));
   }
 
   actions() {return this.actionObservable;}
