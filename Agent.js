@@ -21,7 +21,7 @@ export default class Agent {
 		this.orientListener = (orientation: String): void => {
         orientation = orientation.toLowerCase();
 				this.socket.send(JSON.stringify({type: "event",
-          body: {eventName: "orientation", orientation, timestamp: Date.now()
+          body: {eventName: "rotation", rotation: orientation, timestamp: Date.now()
         }}));
 		};
 		Orientation.addOrientationListener(this.orientListener);
@@ -35,13 +35,14 @@ export default class Agent {
 			}
 		}));
 
- 		this.subscriptions.push(this.socket.actions().subscribe( ({id, action}) => {
-      console.log(`Taking action ${action}`);
-			if      (action == "brighten") this._brighten(id);
-			else if (action == "rotate")   this._rotate(id);
-		}));
 
-		this.callbackIds.push( setInterval(() => {this._darkenScreen()}, 10000) );
+		this.callbackIds.push(setInterval(() => {
+      this._darkenScreen();
+    }, 5000));
+
+    this.callbackIds.push(setInterval(() => {
+      this._rotate()
+    }, 15000));
   } //End constructor
 
   destructor() {
@@ -61,38 +62,21 @@ export default class Agent {
     const socket = BBSocket.getInstance();
 		socket.open(() => {
 			socket.send(JSON.stringify({type: "header", body: {}}));
-
-			Orientation.getOrientation((err, orientation) => {
-        orientation = orientation.toLowerCase();
-				socket.send(JSON.stringify({
-					type: "event",
-					body: {eventName: "orientation", orientation, timestamp: Date.now()}
-				}));
-			});
-
-			SystemSetting.getAppBrightness().then((curr) => {
-        const brightness = brightnessSetting(curr);
-				socket.send(JSON.stringify({
-					type: "event",
-					body: {eventName: "brightness", brightness, timestamp: Date.now()}
-				}));
-			});
 		});
     return socket;
   }
 
 	_darkenScreen() {
 			SystemSetting.getAppBrightness().then((curr) =>{
+        const darkVal = Config.brightness.low;
 
-				const newSetting = brightnessSetting(curr);
-				const newValue = Config.brightness[newSetting];
-
-				if ( (newValue < curr) && (Math.abs(newValue - curr) > 0.001) )
+        if ( Math.abs(darkVal - curr) > 0.001) {
 					this.socket.send(JSON.stringify({type: "event",
-						body: {eventName: "brightness", timestamp: Date.now(), brightness: newSetting}
+						body: {eventName: "darkening", timestamp: Date.now(), darkening: darkVal}
 					}));
+  			  SystemSetting.setAppBrightness(darkVal);
+        }
 
-  			SystemSetting.setAppBrightness(newValue);
 			});
 	}
 
@@ -100,8 +84,6 @@ export default class Agent {
 	  Orientation.getOrientation((err, orientation) => {
 		  if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
 		  else                            Orientation.lockToLandscape();
-		  Orientation.unlockAllOrientations();
-      this._notify(title, rotateMessage, id);
     });
   }
 
@@ -109,7 +91,6 @@ export default class Agent {
   _brighten(id) {
 	   SystemSetting.getAppBrightness().then((curr) => {
 		     SystemSetting.setAppBrightness(Config.brightness.full);
-         this._notify(title, brightenMessage, id);
 	   });
   }
 

@@ -1,6 +1,6 @@
 //@flow
 import React from "react";
-import {View, ScrollView, Text, TouchableNativeFeedback, StyleSheet} from "react-native";
+import {View, ScrollView, Text, TouchableWithoutFeedback, StyleSheet} from "react-native";
 import Orientation from "react-native-orientation";
 import SystemSetting from "react-native-system-setting";
 
@@ -65,7 +65,11 @@ export default class ArticleScreen extends React.Component<Props, State>
 		return (
 			<View style={{flex:1}}>
   			<ScrollView style={{flex:1}}>
-				  {this.awkParagraphs(text)}
+					<TouchableWithoutFeedback onPressIn={brighten}>
+						<View style={{flex:1}}>
+							<Text style={Styles.articleText}>{text}</Text>
+						</View>
+					</TouchableWithoutFeedback>
   			</ScrollView>
 			</View>
 		);
@@ -78,6 +82,10 @@ export default class ArticleScreen extends React.Component<Props, State>
 
 		this.props.navigation.state.params.refresh();
 	}
+}
+
+function brighten() {
+	SystemSetting.setAppBrightness(Config.brightness.full);
 }
 
 const styles = StyleSheet.create({

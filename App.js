@@ -6,6 +6,7 @@ import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
 import SystemSetting from "react-native-system-setting";
+import Orientation from "react-native-orientation";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import SetupScreen from "./SetupScreen";
@@ -21,16 +22,15 @@ class MenuScreen extends React.Component
 
 	render()
 	{
-    SystemSetting.setAppBrightness(Config.initialBrightness);
-
+    refresh();
+    
 		const odyssesyText = require("./odyssesy");
 		const navigate = this.props.navigation.navigate;
 		return (
 			<View style={{flex: 1}}>
 			  <TouchableNativeFeedback onPress={
           ()=>navigate("Odyssesy",
-            {refresh:()=>{SystemSetting.setAppBrightness(Config.brightness.full);},
-              text: odyssesyText, title: "The Odyssesy"}
+            {refresh, text: odyssesyText, title: "The Odyssesy"}
         )}>
 				  <View style={Styles.button}>
 					  <Text style={Styles.buttonText}>Read the Odyssesy</Text>
@@ -51,6 +51,11 @@ class MenuScreen extends React.Component
 			</View>
 		);
 	}
+}
+
+function refresh() {
+  SystemSetting.setAppBrightness(Config.brightness.full);
+  Orientation.lockToPortrait();
 }
 
 const App = createStackNavigator(
