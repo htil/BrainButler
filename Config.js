@@ -39,12 +39,13 @@ export function edfHeader() {
       label => `HP:${settings.highpass}Hz LP:${settings.lowpass}Hz`);
     const physicalDimension = labels.map(label => "uV");
 
-    const dateObj = new Date(Date.now());
+    const timestamp = Date.now();
+    const dateObj = new Date(timestamp);
     const startDate = edfDate(dateObj);
     const startTime = edfTime(dateObj);
 
     const patientCode = `${settings.labPrefix}-${settings.patientNumber}`;
 
-    return {labels, sampleFrequency, startDate,
+    return {labels, sampleFrequency, timestamp, startDate,
       startTime, prefilter, physicalDimension, patientCode};
 }

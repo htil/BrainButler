@@ -65,7 +65,7 @@ export default class ArticleScreen extends React.Component<Props, State>
 		return (
 			<View style={{flex:1}}>
   			<ScrollView style={{flex:1}}>
-					<TouchableWithoutFeedback onPressIn={brighten}>
+					<TouchableWithoutFeedback onPressIn={ () => {this.brighten()} }>
 						<View style={{flex:1}}>
 							<Text style={Styles.articleText}>{text}</Text>
 						</View>
@@ -75,6 +75,10 @@ export default class ArticleScreen extends React.Component<Props, State>
 		);
 	}
 
+	brighten() {
+		this.agent.brightenScreen();
+	}
+
 	componentWillUnmount()
 	{
 		Orientation.removeOrientationListener(this.orientListener);
@@ -82,10 +86,6 @@ export default class ArticleScreen extends React.Component<Props, State>
 
 		this.props.navigation.state.params.refresh();
 	}
-}
-
-function brighten() {
-	SystemSetting.setAppBrightness(Config.brightness.full);
 }
 
 const styles = StyleSheet.create({

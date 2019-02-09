@@ -4,7 +4,7 @@ import {Alert} from "react-native";
 import Orientation from "react-native-orientation";
 import SystemSetting from "react-native-system-setting";
 
-import Config from "./Config";
+import Config, {edfHeader} from "./Config";
 import BBSocket from "./BBSocket";
 import {eegObservable} from "./Streaming";
 
@@ -21,7 +21,7 @@ export default class Agent {
 		this.orientListener = (orientation: String): void => {
         orientation = orientation.toLowerCase();
 				this.socket.send(JSON.stringify({type: "event",
-          body: {eventName: "rotation", rotation: orientation, timestamp: Date.now()
+          body: {eventName: "orientation", orientation, timestamp: Date.now()
         }}));
 		};
 		Orientation.addOrientationListener(this.orientListener);
@@ -34,7 +34,6 @@ export default class Agent {
 				this.eegBuffer = [];
 			}
 		}));
-
 
 		this.callbackIds.push(setInterval(() => {
       this._darkenScreen();
@@ -61,25 +60,59 @@ export default class Agent {
   static _openSocket() {
     const socket = BBSocket.getInstance();
 		socket.open(() => {
-			socket.send(JSON.stringify({type: "header", body: {}}));
+
+      var headerData = edfHeader();
+      headerData.labels.push("orientation");
+      headerData.sampleFrequency.push(0);
+      headerData.prefilter.push("None");
+      headerData.physicalDimension.push("None");
+      headerData.labels.push("brightness");
+      headerData.sampleFrequency.push(0);
+      headerData.prefilter.push("None");
+      headerData.physicalDimension.push("None");
+			socket.send(JSON.stringify({type: "header", body: headerData}));
+
+      Orientation.getOrientation((err, orientation) => {
+        orientation = orientation.toLowerCase();
+				socket.send(JSON.stringify({
+					type: "event",
+					body: {eventName: "orientation", orientation, timestamp: Date.now()}
+				}));
+			});
+
+			SystemSetting.getAppBrightness().then((curr) => {
+        const brightness = "full"; //FIXME: Derive this from `curr`
+				socket.send(JSON.stringify({
+					type: "event",
+					body: {eventName: "brightness", brightness, timestamp: Date.now()}
+				}));
+			});
 		});
+
     return socket;
   }
 
-	_darkenScreen() {
-			SystemSetting.getAppBrightness().then((curr) =>{
-        const darkVal = Config.brightness.low;
+  brightenScreen() {
+    this._changeBrightness(Config.brightness.full, "full")
+  }
 
-        if ( Math.abs(darkVal - curr) > 0.001) {
+  _darkenScreen() {
+      this._changeBrightness(Config.brightness.low, "low")
+  }
+
+  _changeBrightness(value, name) {
+			SystemSetting.getAppBrightness().then((curr) => {
+        if (Math.abs(value - curr) > 0.001) {
 					this.socket.send(JSON.stringify({type: "event",
-						body: {eventName: "darkening", timestamp: Date.now(), darkening: darkVal}
+						body: {eventName: "brightness", timestamp: Date.now(), brightness: name}
 					}));
-  			  SystemSetting.setAppBrightness(darkVal);
+  			  SystemSetting.setAppBrightness(value);
         }
-
 			});
-	}
+  }
 
+  //We don't send an event through the BBSocket, because the OrientationListener
+  // already does so
   _rotate(id) {
 	  Orientation.getOrientation((err, orientation) => {
 		  if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
@@ -105,11 +138,6 @@ export default class Agent {
    }
 } //End class
 
-function brightnessSetting(value) {
-				if      (value == Config.brightness.full)   return "medium";
-				else if (value == Config.brightness.medium) return "low";
-				return "low";
-}
 
 const title: String = "Hey!";
 const brightenMessage: String =
