@@ -37,11 +37,14 @@ export default class Agent {
 
 		this.callbackIds.push(setInterval(() => {
       this._darkenScreen();
-    }, 5000));
+    }, Config.brightnessTimeout));
 
     this.callbackIds.push(setInterval(() => {
-      this._rotate()
-    }, 15000));
+      if (Math.random() <= Config.rotationProb) {
+        console.log("Rotating.");
+        this._rotate();
+      }
+    }, Config.rotationInterval));
   } //End constructor
 
   destructor() {
@@ -117,6 +120,7 @@ export default class Agent {
 	  Orientation.getOrientation((err, orientation) => {
 		  if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
 		  else                            Orientation.lockToLandscape();
+      Orientation.unlockAllOrientations();
     });
   }
 

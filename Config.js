@@ -30,7 +30,10 @@ export default settings = {
     lowpass: 30,
     labPrefix: "HTIL",
     patientNumber: "0",
-    serverUri: `ws://${props.ip}:${props.port}`
+    serverUri: `ws://${props.ip}:${props.port}`,
+    brightnessTimeout: 30000,
+    rotationInterval: 15000,
+    rotationProb: 0.5,
 }
 export function edfHeader() {
     const labels = ["EEG1", "EEG2", "EEG3", "EEG4"];

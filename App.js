@@ -23,7 +23,7 @@ class MenuScreen extends React.Component
 	render()
 	{
     refresh();
-    
+
 		const odyssesyText = require("./odyssesy");
 		const navigate = this.props.navigation.navigate;
 		return (
@@ -56,6 +56,7 @@ class MenuScreen extends React.Component
 function refresh() {
   SystemSetting.setAppBrightness(Config.brightness.full);
   Orientation.lockToPortrait();
+  Orientation.unlockAllOrientations();
 }
 
 const App = createStackNavigator(
