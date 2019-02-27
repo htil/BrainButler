@@ -34,12 +34,6 @@ export default class BBSocket {
       this.ws = null;
   }
 
-  reward(id, r) {
-      this.ws.send(JSON.stringify({type: "reward", body: {id, r}}));
-  }
-
-  actions() {return this.actionObservable;}
-
   //PRIVATE, STATIC
   static instance: BBSocket = null;
 

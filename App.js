@@ -6,11 +6,9 @@ import {DeviceEventEmitter} from "react-native";
 import {createStackNavigator} from "react-navigation";
 //Installed modules
 import SystemSetting from "react-native-system-setting";
-import Orientation from "react-native-orientation";
 //Local modules
 import ArticleScreen from "./ArticleScreen";
 import SetupScreen from "./SetupScreen";
-import GameScreen from "./GameScreen";
 import MuseBanner from "./MuseBanner";
 import Styles from "./Styles.js";
 import Config from "./Config.js";
@@ -37,12 +35,6 @@ class MenuScreen extends React.Component
 				  </View>
 			  </TouchableNativeFeedback>
 
-				<TouchableNativeFeedback  onPress={()=>navigate("Game", {title: "Train BrainButler"})}>
-					<View style={Styles.button}>
-						<Text style={Styles.buttonText}>Train BrainButler</Text>
-					</View>
-				</TouchableNativeFeedback>
-
 				<TouchableNativeFeedback  onPress={()=>navigate("Setup", {title: "Setup"})}>
 					<View style={Styles.smallButton}>
 						<Text style={Styles.buttonText}>Researcher Options</Text>
@@ -55,14 +47,12 @@ class MenuScreen extends React.Component
 
 function refresh() {
   SystemSetting.setAppBrightness(Config.brightness.full);
-  Orientation.lockToPortrait();
 }
 
 const App = createStackNavigator(
 	{
 		Menu: {screen: MenuScreen},
 		Odyssesy: {screen: ArticleScreen},
-		Game: {screen: GameScreen},
 		Setup: {screen: SetupScreen}
 	},
 	{
