@@ -120,7 +120,6 @@ export default class Agent {
 	  Orientation.getOrientation((err, orientation) => {
 		  if (orientation == "LANDSCAPE") Orientation.lockToPortrait();
 		  else                            Orientation.lockToLandscape();
-      Orientation.unlockAllOrientations();
     });
   }
 

@@ -31,9 +31,9 @@ export default settings = {
     labPrefix: "HTIL",
     patientNumber: "0",
     serverUri: `ws://${props.ip}:${props.port}`,
-    brightnessTimeout: 30000,
-    rotationInterval: 15000,
-    rotationProb: 0.5,
+    brightnessTimeout: 15000,
+    rotationInterval: 10000,
+    rotationProb: 0.75,
 }
 export function edfHeader() {
     const labels = ["EEG1", "EEG2", "EEG3", "EEG4"];

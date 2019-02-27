@@ -56,7 +56,6 @@ class MenuScreen extends React.Component
 function refresh() {
   SystemSetting.setAppBrightness(Config.brightness.full);
   Orientation.lockToPortrait();
-  Orientation.unlockAllOrientations();
 }
 
 const App = createStackNavigator(
