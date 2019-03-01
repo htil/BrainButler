@@ -7,9 +7,8 @@ import {createStackNavigator} from "react-navigation";
 //Installed modules
 import SystemSetting from "react-native-system-setting";
 //Local modules
-import ArticleScreen from "./ArticleScreen";
+import MathScreen from "./MathScreen";
 import SetupScreen from "./SetupScreen";
-import MuseBanner from "./MuseBanner";
 import Styles from "./Styles.js";
 import Config from "./Config.js";
 
@@ -26,14 +25,12 @@ class MenuScreen extends React.Component
 		const navigate = this.props.navigation.navigate;
 		return (
 			<View style={{flex: 1}}>
-			  <TouchableNativeFeedback onPress={
-          ()=>navigate("Odyssesy",
-            {refresh, text: odyssesyText, title: "The Odyssesy"}
-        )}>
-				  <View style={Styles.button}>
-					  <Text style={Styles.buttonText}>Read the Odyssesy</Text>
-				  </View>
-			  </TouchableNativeFeedback>
+
+		    <TouchableNativeFeedback  onPress={()=>navigate("Experiment", {refresh, title: "Experiment"})}>
+					<View style={Styles.smallButton}>
+						<Text style={Styles.buttonText}>Experiment</Text>
+					</View>
+				</TouchableNativeFeedback>
 
 				<TouchableNativeFeedback  onPress={()=>navigate("Setup", {title: "Setup"})}>
 					<View style={Styles.smallButton}>
@@ -47,12 +44,13 @@ class MenuScreen extends React.Component
 
 function refresh() {
   SystemSetting.setAppBrightness(Config.brightness.full);
+  console.log("Called refresh");
 }
 
 const App = createStackNavigator(
 	{
 		Menu: {screen: MenuScreen},
-		Odyssesy: {screen: ArticleScreen},
+		Experiment: {screen: MathScreen},
 		Setup: {screen: SetupScreen}
 	},
 	{

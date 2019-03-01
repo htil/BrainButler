@@ -22,10 +22,6 @@ export default class Agent {
 			}
 		}));
 
-		this.callbackIds.push(setInterval(() => {
-      this._darkenScreen();
-    }, Config.brightnessTimeout));
-
   } //End constructor
 
   destructor() {
@@ -65,9 +61,11 @@ export default class Agent {
     this._changeBrightness(Config.brightness.full, "full")
   }
 
-  _darkenScreen() {
+  darkenScreen() {
       this._changeBrightness(Config.brightness.low, "low")
   }
+
+  _darkenScreen() {this.darkenScreen();}
 
   _changeBrightness(num, str) {
 			SystemSetting.getAppBrightness().then((curr) => {
