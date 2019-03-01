@@ -5,13 +5,13 @@ import Config, {edfHeader} from "./Config";
 import BBSocket from "./BBSocket";
 import {eegObservable} from "./Streaming";
 
-export default class Agent {
+export default class Controller {
   constructor() {
 		this.eegBuffer = [];
 		this.subscriptions = [];
 		this.callbackIds = [];
 
-		this.socket = Agent._openSocket();
+		this.socket = Controller._openSocket();
 
 		this.subscriptions.push( eegObservable.subscribe((packet) => {
 			this.eegBuffer.push(packet);
@@ -79,4 +79,4 @@ export default class Agent {
 			});
   }
 
-} //End Agent class
+} //End Controller class
