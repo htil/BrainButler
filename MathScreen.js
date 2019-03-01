@@ -38,6 +38,15 @@ export default class MathScreen extends React.Component<Props, State> {
     }, timeout - Config.darkness.warning);
   }
 
+  displayProblem() {
+      this.probIndex = (this.probIndex + 1) % problems.length;
+      const text = problems[this.probIndex].text;
+      this.setState((prev) => { return {text}; });
+      this.controller.recordEvent({
+        type: "event", name: "problem",
+        value: text, timestamp: Date.now()
+      });
+  }
 
   constructor(props) {
     super(props);
@@ -48,26 +57,21 @@ export default class MathScreen extends React.Component<Props, State> {
     this.intervals = [];
     this.timeouts = [];
 
-    this.intervals.push(setInterval(() => {
-      this.probIndex = (this.probIndex + 1) % problems.length;
-      this.setState((prev) => {
-        return {text: problems[this.probIndex].text}
-      });
-    }, Config.problems.interval));
+    this.intervals.push(setInterval(() => {this.displayProblem()}, Config.problems.interval));
 
     this.setDarknessTimeout();
 
   }
 
   render() {
-    const flexPadding = styles.equation.flex;
+    const flexPadding = styles.problem.flex;
     return (
       <View style={{flex: 1}}>
         <View style={{flex: flexPadding}}>
           <Text style={styles.warningText}>{this.state.warningText}</Text>
         </View>
-        <View style={styles.equation}>
-          <Text style={styles.equationText}>{this.state.text}</Text>
+        <View style={styles.problem}>
+          <Text style={styles.problemText}>{this.state.text}</Text>
         </View>
         <View style={{flex: flexPadding}}></View>
       </View>
@@ -79,11 +83,20 @@ export default class MathScreen extends React.Component<Props, State> {
       const text = prev.text;
       return {text, warningText: "About to darken"};
     });
+    this.controller.recordEvent({
+      type: "event", name: "dispWarning",
+      value: true, timestamp: Date.now()
+    });
   }
   removeWarning() {
     this.setState((prev) => {
         return {text: prev.text, warningText: ""}
     });
+    this.controller.recordEvent({
+      type: "event", name: "dispWarning",
+      value: false, timestamp: Date.now()
+    });
+
   }
 
   componentWillUnmount() {
@@ -109,11 +122,11 @@ const styles = StyleSheet.create({
       fontWeight: "bold",
       textAlign: "center",
   },
-  equation:
+  problem:
   {
     flex: 1,
   },
-  equationText:
+  problemText:
   {
     fontSize: 60,
     fontWeight: "bold",

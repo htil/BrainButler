@@ -57,6 +57,13 @@ export default class Controller {
     return socket;
   }
 
+  /*
+   * Record an arbitrary event
+  */
+  recordEvent(packet) {
+    this.socket.send(JSON.stringify(packet));
+  }
+
   brightenScreen() {
     this._changeBrightness(Config.brightness.full, "full")
   }
