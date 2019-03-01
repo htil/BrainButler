@@ -21,7 +21,6 @@ class MenuScreen extends React.Component
 	{
     refresh();
 
-		const odyssesyText = require("./odyssesy");
 		const navigate = this.props.navigation.navigate;
 		return (
 			<View style={{flex: 1}}>
@@ -44,7 +43,6 @@ class MenuScreen extends React.Component
 
 function refresh() {
   SystemSetting.setAppBrightness(Config.brightness.full);
-  console.log("Called refresh");
 }
 
 const App = createStackNavigator(
