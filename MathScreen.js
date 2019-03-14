@@ -48,12 +48,11 @@ export default class MathScreen extends React.Component<Props, State> {
       });
   }
 
-  displayMethodPrompt() {
+  displayStrategyPrompt() {
 
-      const text = "Did you use \n" +
-                    "1. Fact Retrieval \n" +
-                    "2. Procedure Use \n" +
-                    "3. Something else";
+      const text =  "1 ...Retrieval? \n" +
+                    "2 ...Procedural? \n" +
+                    "3 ...Other?";
       this.setState((prev) => {return {text};});
       this.controller.recordEvent({
         type: "event", name: "methodPrompt",
@@ -73,7 +72,7 @@ export default class MathScreen extends React.Component<Props, State> {
     this.actionCallback = (action) => {
         console.log(`action=${action}`);
         if (action == "displayProblem") this.displayProblem();
-        else                            this.displayMethodPrompt();
+        else                            this.displayStrategyPrompt();
 
     };
     DeviceEventEmitter.addListener("BBAction", this.actionCallback);
