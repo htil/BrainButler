@@ -1,9 +1,11 @@
 //@flow
+import {DeviceEventEmitter} from "react-native";
 import SystemSetting from "react-native-system-setting";
 
 import Config, {edfHeader} from "./Config";
 import BBSocket from "./BBSocket";
 import {eegObservable} from "./Streaming";
+
 
 export default class Controller {
   constructor() {
@@ -30,20 +32,20 @@ export default class Controller {
 		this.callbackIds.forEach(callbackId => clearInterval(callbackId));
 		this.callbackIds = [];
     this.socket.send(JSON.stringify({type: "eof"}));
+
 		this.socket.close();
   }
 
   static _openSocket() {
     const socket = BBSocket.getInstance();
-		socket.open(() => {
 
-      var headerData = edfHeader();
+    const openFunc = () => {
+        var headerData = edfHeader();
       headerData.labels.push("brightness");
       headerData.sampleFrequency.push(0);
       headerData.prefilter.push("None");
       headerData.physicalDimension.push("None");
 			socket.send(JSON.stringify({type: "header", ...headerData}));
-
 
 			SystemSetting.getAppBrightness().then((curr) => {
         const brightness = "full"; //FIXME: Derive this from `curr`
@@ -52,7 +54,9 @@ export default class Controller {
           value: brightness, timestamp: Date.now()
 				}));
 			});
-		});
+		}
+
+    socket.open(openFunc);
 
     return socket;
   }

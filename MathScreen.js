@@ -1,5 +1,5 @@
 //@flow
-import {View, Text, StyleSheet} from "react-native";
+import {View, Text, StyleSheet, DeviceEventEmitter} from "react-native";
 import React from "react";
 
 //3rd party libraries
@@ -48,6 +48,19 @@ export default class MathScreen extends React.Component<Props, State> {
       });
   }
 
+  displayMethodPrompt() {
+
+      const text = "Did you use \n" +
+                    "1. Fact Retrieval \n" +
+                    "2. Procedure Use \n" +
+                    "3. Something else";
+      this.setState((prev) => {return {text};});
+      this.controller.recordEvent({
+        type: "event", name: "methodPrompt",
+        value: "", timestamp: Date.now()
+      });
+  }
+
   constructor(props) {
     super(props);
     this.state  = {text: problems[0].text, warningText: ""};
@@ -57,21 +70,27 @@ export default class MathScreen extends React.Component<Props, State> {
     this.intervals = [];
     this.timeouts = [];
 
-    this.intervals.push(setInterval(() => {this.displayProblem()}, Config.problems.interval));
+    this.actionCallback = (action) => {
+        console.log(`action=${action}`);
+        if (action == "displayProblem") this.displayProblem();
+        else                            this.displayMethodPrompt();
+
+    };
+    DeviceEventEmitter.addListener("BBAction", this.actionCallback);
 
     this.setDarknessTimeout();
 
   }
 
   render() {
-    const flexPadding = styles.problem.flex;
+    const flexPadding = styles.main.flex;
     return (
       <View style={{flex: 1}}>
         <View style={{flex: flexPadding}}>
           <Text style={styles.warningText}>{this.state.warningText}</Text>
         </View>
-        <View style={styles.problem}>
-          <Text style={styles.problemText}>{this.state.text}</Text>
+        <View style={styles.main}>
+          <Text style={styles.mainText}>{this.state.text}</Text>
         </View>
         <View style={{flex: flexPadding}}></View>
       </View>
@@ -100,6 +119,7 @@ export default class MathScreen extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
+    DeviceEventEmitter.removeListener("BBAction", this.actionCallback);
     this.intervals.forEach((id) => clearInterval(id));
     this.timeouts.forEach((id) => clearInterval(id));
     this.controller.destructor();
@@ -122,11 +142,11 @@ const styles = StyleSheet.create({
       fontWeight: "bold",
       textAlign: "center",
   },
-  problem:
+  main:
   {
     flex: 1,
   },
-  problemText:
+  mainText:
   {
     fontSize: 60,
     fontWeight: "bold",

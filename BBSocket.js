@@ -13,17 +13,18 @@ export default class BBSocket {
   }
 
   //PUBLIC, INSTANCE
-  open(onopen?: () => void) {
+  open(onopen?: () => void, onmessage?: () => void) {
     if (this.ws) this.close();
 
     this.serverUri = Config.serverUri;
     this.ws = new WebSocket(this.serverUri);
     this.ws.onopen = onopen;
-    console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
 
     this.ws.onmessage = (message) => {
-        DeviceEventEmitter.emit("BBAction", JSON.parse(message.data));
+        const parsed = JSON.parse(message.data);
+        DeviceEventEmitter.emit("BBAction", parsed.action);
     }
+    console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
   }
   send(packet) {
       this.ws.send(packet);
