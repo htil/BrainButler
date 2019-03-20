@@ -6,7 +6,6 @@ import React from "react";
 import SystemSetting from "react-native-system-setting";
 
 import Controller from "./Controller.js";
-import problems from "./problems.json";
 import Config from "./Config.js";
 
 import {warn, removeWarning} from "./warnings.js";
@@ -14,24 +13,29 @@ import {warn, removeWarning} from "./warnings.js";
 type Props = {};
 type State = {warningText: string, text: string, playing: boolean};
 export default class MathScreen extends React.Component<Props, State> {
-  blankenTimeout: number;
   state: State;
+  blankenTimeout: number;
+  nextProblem: string;
 
   constructor(props) {
     super(props);
     this.state  = {text: "Waiting for researcher...", warningText: "", playing: false};
-    this.probIndex = -1;
     this.intervals = [];
     this.timeouts = [];
     this.blankenTimeout = -1;
+    this.nextProblem = "";
 
     this.controller = new Controller();
 
     this.actionCallback = (action, ...args) => {
         this[action].apply(this, args);
     };
-    DeviceEventEmitter.addListener("BBAction", this.actionCallback);
+    this.problemCallback = (problem) => {
+        this.nextProblem = problem;
+    };
 
+    DeviceEventEmitter.addListener("BBAction", this.actionCallback);
+    DeviceEventEmitter.addListener("BBProblem", this.problemCallback);
   }
 
   startExperiment() {
@@ -56,6 +60,7 @@ export default class MathScreen extends React.Component<Props, State> {
   }
   componentWillUnmount() {
     DeviceEventEmitter.removeListener("BBAction", this.actionCallback);
+    DeviceEventEmitter.removeListener("BBProblem", this.problemCallback);
     this.intervals.forEach((id) => clearInterval(id));
     this.timeouts.forEach((id) => clearTimeout(id));
     this.controller.destructor();
@@ -91,7 +96,6 @@ export default class MathScreen extends React.Component<Props, State> {
         clearTimeout(this.blankenTimeout);
         this.blankenTimeout = -1;
       }
-      //console.log("Changed the centerText: blankenTimeout = "+this.blankenTimeout);
 
       this.setState((prev) => { return {text}; });
       this.controller.recordEvent({
@@ -102,11 +106,9 @@ export default class MathScreen extends React.Component<Props, State> {
   blankenText() { this.changeCenterText("", "blankScreen"); }
 
   displayProblem() {
-      this.probIndex = (this.probIndex + 1) % problems.length;
-      const text = problems[this.probIndex].text;
+      const text = this.nextProblem;
       this.changeCenterText(text, "problem");
       this.blankenTimeout = setTimeout(() => {this.blankenText();}, 7000);
-      //console.log("blankenTimeout = "+this.blankenTimeout);
   }
 
   displayStrategyPrompt() {

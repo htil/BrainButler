@@ -22,7 +22,11 @@ export default class BBSocket {
 
     this.ws.onmessage = (message) => {
         const parsed = JSON.parse(message.data);
-        DeviceEventEmitter.emit("BBAction", parsed.action);
+        if (parsed.action)
+          DeviceEventEmitter.emit("BBAction", parsed.action);
+
+        else if (parsed.problem)
+          DeviceEventEmitter.emit("BBProblem", parsed.problem);
     }
     console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
   }
