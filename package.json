@@ -7,15 +7,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@neurosity/pipes": "git+file:/home/elmines/git/eeg-pipes#dev",
     "brain-butler-schema": "0.0.1",
     "metro-react-native-babel-preset": "^0.53.1",
     "react": "^16.7.0",
-    "react-native": "^0.57.8",
+    "react-native": "^0.59.1",
     "react-native-bci": "0.0.3",
     "react-native-muse": "0.0.5",
-    "react-native-orientation": "^3.1.3",
-    "react-native-sensors": "^5.1.5",
     "react-native-system-setting": "^1.7.1",
     "react-navigation": "^2.18.3"
   },

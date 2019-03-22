@@ -31,7 +31,8 @@ export default class BBSocket {
     console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
   }
   send(packet) {
-      this.ws.send(packet);
+      //Guards from lingering callbacks after close() has been called
+      if (this.ws) this.ws.send(packet);
   }
   close() {
       console.log(`Closing connection to brain-butler-server at ${this.serverUri}`);
