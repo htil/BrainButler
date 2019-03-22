@@ -11,7 +11,6 @@ buildscript {
     repositories {
         google()
         jcenter()
-        google()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.3.0+'
@@ -30,12 +29,10 @@ allprojects {
             // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
             url "$rootDir/../node_modules/react-native/android"
         }
-        google()
     }
 }
 
-
-task wrapper(type: Wrapper) {
+wrapper {
     gradleVersion = '4.10.2'
     distributionUrl = distributionUrl.replace("bin", "all")
 }
