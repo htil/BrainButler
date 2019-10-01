@@ -18,24 +18,32 @@ export default class BBSocket {
 
     this.serverUri = Config.serverUri;
     this.ws = new WebSocket(this.serverUri);
-    this.ws.onopen = onopen;
+    this.ws.onopen = () => {
+      if (onopen) onopen();
+      console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
+    }
 
     this.ws.onmessage = (message) => {
         const parsed = JSON.parse(message.data);
-        if (parsed.action)
-          DeviceEventEmitter.emit("BBAction", parsed.action);
+        console.log(`Got a message`);
 
-        else if (parsed.problem)
-          DeviceEventEmitter.emit("BBProblem", parsed.problem);
+        if (parsed.type === "next") {
+          console.log("Emitting 'nextTrial'")
+          DeviceEventEmitter.emit("nextTrial");
+        }
+        else if (parsed.type === "start") {
+          DeviceEventEmitter.emit("start");
+        }
     }
-    console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
+    this.ws.onclose = (e) => {
+      console.log(`Closing connection to brain-butler-server at ${this.serverUri}`);
+    };
   }
   send(packet) {
       //Guards from lingering callbacks after close() has been called
       if (this.ws) this.ws.send(packet);
   }
   close() {
-      console.log(`Closing connection to brain-butler-server at ${this.serverUri}`);
       this.ws.close();
       this.ws = null;
   }
@@ -47,7 +55,6 @@ export default class BBSocket {
   constructor() {
     this.ws = null;
     this.serverUri = null;
-    this.actionObservable = fromEvent(DeviceEventEmitter, "BBAction");
   }
 
   ws: Websocket;

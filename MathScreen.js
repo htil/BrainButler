@@ -8,68 +8,98 @@ import SystemSetting from "react-native-system-setting";
 import Controller from "./Controller.js";
 import Config from "./Config.js";
 
+import problems from "./problems.json";
+import ProblemSet from "./ProblemSet.js";
+
 import {warn, removeWarning} from "./warnings.js";
 
+const TextState = {
+  Strategy : 0,
+  Problem : 1,
+  Fixation : 2,
+  Blank : 3,
+  Wait : 4
+}
+
 type Props = {};
-type State = {warningText: string, text: string, playing: boolean};
+type State = {
+  warningText: string,
+  textState: object,
+};
 export default class MathScreen extends React.Component<Props, State> {
   state: State;
   blankenTimeout: number;
-  nextProblem: string;
 
   constructor(props) {
     super(props);
-    this.state  = {text: "Waiting for researcher...", warningText: "", playing: false};
+    this.waitingText = "Waiting for researcher...";
+    this.strategyPrompt =  "1 ...Retrieval? \n" +
+                           "2 ...Procedural? \n" +
+                           "3 ...Other?";
+
+    this.state  = {warningText: "", textState: TextState.Wait};
     this.intervals = [];
     this.timeouts = [];
     this.blankenTimeout = -1;
-    this.nextProblem = "";
 
     this.controller = new Controller();
+    this.problemSet = new ProblemSet(problems);
 
-    this.actionCallback = (action, ...args) => {
-        this[action].apply(this, args);
-    };
-    this.problemCallback = (problem) => {
-        this.nextProblem = problem;
-    };
+    this.startCallback = () => this.startExperiment();
+    this.nextCallback = () => {
+      if (this.problemSet.hasNext()) this.nextTrial();
+      else                           this.endExperiment();
+    }
+    DeviceEventEmitter.addListener("nextTrial", this.nextCallback);
+    DeviceEventEmitter.addListener("start", this.startCallback);
 
-    DeviceEventEmitter.addListener("BBAction", this.actionCallback);
-    DeviceEventEmitter.addListener("BBProblem", this.problemCallback);
   }
-
-  startExperiment() {
-    this.setDarknessTimeout();
-    this.displayFixationPoint();
-  }
-
   render() {
-
     const flexPadding = styles.main.flex;
+    const {textState} = this.state;
+
     return (
       <View style={{flex: 1}}>
         <View style={{flex: flexPadding}}>
           <Text style={styles.warningText}>{this.state.warningText}</Text>
         </View>
         <View style={styles.main}>
-          <Text style={styles.mainText}>{this.state.text}</Text>
+          <Text style={styles.mainText}>
+            {
+              textState === TextState.Strategy ? this.strategyPrompt :
+              textState === TextState.Problem  ? this.nextProblem    :
+              textState === TextState.Fixation ? "."                 :
+              textState === TextState.Blank    ? ""                  :
+              textState === TextState.Wait     ? this.waitingText    :
+                                                 ""
+            }
+          </Text>
         </View>
         <View style={{flex: flexPadding}}></View>
       </View>
     );
   }
-  componentWillUnmount() {
-    DeviceEventEmitter.removeListener("BBAction", this.actionCallback);
-    DeviceEventEmitter.removeListener("BBProblem", this.problemCallback);
+  componentWillUnmount() { this.restoreApplication(); }
+
+
+  startExperiment() {
+    this.setDarknessTimeout();
+    this.nextTrial();
+  }
+  restoreApplication() {
+    DeviceEventEmitter.removeListener("nextTrial", this.nextCallback);
+    DeviceEventEmitter.removeListener("start", this.startCallback);
     this.intervals.forEach((id) => clearInterval(id));
     this.timeouts.forEach((id) => clearTimeout(id));
     this.controller.destructor();
     SystemSetting.setAppBrightness(Config.brightness.full);
   }
 
-  setTimeout(callback, delay: Number) {
-      this.timeouts.push(setTimeout(callback, delay));
-      if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
+  endExperiment() {
+    this.setState(prev => {
+       return {warningText: "", textState: TextState.Wait}
+    });
+    this.restoreApplication();
   }
 
   rebrighten() {
@@ -91,42 +121,32 @@ export default class MathScreen extends React.Component<Props, State> {
     }, timeout - Config.darkness.warning);
   }
 
-  changeCenterText(text: string, eventName: string) {
-      if (this.blankenTimeout != -1) {
-        clearTimeout(this.blankenTimeout);
-        this.blankenTimeout = -1;
-      }
-
-      this.setState((prev) => { return {text}; });
-      this.controller.recordEvent({
-        type: "event", name: eventName,
-        value: text, timestamp: Date.now()
-      });
-  }
-  blankenText() { this.changeCenterText("", "blankScreen"); }
-
-  displayProblem() {
-      const text = this.nextProblem;
-      this.changeCenterText(text, "problem");
-      this.blankenTimeout = setTimeout(() => {this.blankenText();}, 7000);
+  nextTrial() {
+    this.nextProblem = this.problemSet.next();
+    this.displayFixationPoint();
+    this.setTimeout(() => { this.displayProblem(); }, 3000);
   }
 
   displayStrategyPrompt() {
-      const text =  "1 ...Retrieval? \n" +
-                    "2 ...Procedural? \n" +
-                    "3 ...Other?";
-      this.changeCenterText(text, "strategyPrompt");
+    this.setState(prev => {return {textState: TextState.Strategy} });
   }
-  displayIntertrial() {
-    this.blankenText();
-    this.setTimeout(() => {this.displayFixationPoint();}, 2000);
-  }
-
   displayFixationPoint() {
-    this.changeCenterText(".", "fixationPoint");
-    this.setTimeout(() => {this.displayProblem();}, 3000);
+    this.setState(prev => { return {textState: TextState.Fixation} });
+  }
+  displayBlankScreen() {
+    this.setState(prev => { return {textState: TextState.Blank} });
+  }
+  displayProblem() {
+      this.setState(prev => { return {textState: TextState.Problem}; });
+      this.blankenTimeout = this.setTimeout(() => {this.displayBlankScreen();}, 7000);
+      this.controller.sendMathForm();
   }
 
+
+  setTimeout(callback, delay: Number) {
+      this.timeouts.push(setTimeout(callback, delay));
+      if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
+  }
 }
 
 function darknessTimeout() {

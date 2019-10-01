@@ -36,6 +36,17 @@ export default class Controller {
 		this.socket.close();
   }
 
+  sendMathForm() {
+    console.log("Sending a math form");
+    const payload = {
+      type: "form",
+      form: {
+        fields: null
+      }
+    };
+    this.socket.send(JSON.stringify(payload));
+  }
+
   static _openSocket() {
     const socket = BBSocket.getInstance();
 
