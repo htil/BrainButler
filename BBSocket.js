@@ -29,7 +29,7 @@ export default class BBSocket {
 
         if (parsed.type === "next") {
           console.log("Emitting 'nextTrial'")
-          DeviceEventEmitter.emit("nextTrial");
+          DeviceEventEmitter.emit("next");
         }
         else if (parsed.type === "start") {
           DeviceEventEmitter.emit("start");

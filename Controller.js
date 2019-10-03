@@ -41,9 +41,32 @@ export default class Controller {
     const payload = {
       type: "form",
       form: {
-        fields: null
+        title: "Math Problem",
+        categories: ["Text"],
+        fields: [
+          {name: "solution", label: "Solution"}
+        ],
       }
     };
+    this.socket.send(JSON.stringify(payload));
+  }
+  sendPromptForm() {
+    console.log("Sending a prompt form");
+    const payload = {
+      type: "form",
+      form: {
+        title: "Strategy",
+        categories: ["Choice"],
+        fields: [
+          {
+            name: "strategy",
+            labels: ["Fact Retrieval", "Procedure Use", "Other"],
+            values: ["factRetrieval", "procedureUse", "other"],
+            exclusive: true
+          }
+        ]
+      }
+    }
     this.socket.send(JSON.stringify(payload));
   }
 

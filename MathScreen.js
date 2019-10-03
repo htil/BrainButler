@@ -47,10 +47,16 @@ export default class MathScreen extends React.Component<Props, State> {
 
     this.startCallback = () => this.startExperiment();
     this.nextCallback = () => {
-      if (this.problemSet.hasNext()) this.nextTrial();
-      else                           this.endExperiment();
+
+      if (this.state.textState === TextState.Strategy) {
+        if (this.problemSet.hasNext()) this.nextTrial();
+        else                           this.endExperiment();
+      }
+      else {
+        this.displayStrategyPrompt();
+      }
     }
-    DeviceEventEmitter.addListener("nextTrial", this.nextCallback);
+    DeviceEventEmitter.addListener("next", this.nextCallback);
     DeviceEventEmitter.addListener("start", this.startCallback);
 
   }
@@ -129,12 +135,16 @@ export default class MathScreen extends React.Component<Props, State> {
 
   displayStrategyPrompt() {
     this.setState(prev => {return {textState: TextState.Strategy} });
+    this.controller.sendPromptForm();
   }
   displayFixationPoint() {
     this.setState(prev => { return {textState: TextState.Fixation} });
   }
   displayBlankScreen() {
-    this.setState(prev => { return {textState: TextState.Blank} });
+    this.setState(prev => {
+      if (this.state.textState === TextState.Problem) return {textState: TextState.Blank}
+      return prev;
+    });
   }
   displayProblem() {
       this.setState(prev => { return {textState: TextState.Problem}; });
