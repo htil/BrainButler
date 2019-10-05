@@ -15,7 +15,8 @@
     "react-native-bci": "0.0.3",
     "react-native-muse": "0.0.5",
     "react-native-system-setting": "^1.7.2",
-    "react-navigation": "^2.18.3"
+    "react-navigation": "^2.18.3",
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {
     "babel-jest": "23.6.0",

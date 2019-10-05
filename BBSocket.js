@@ -1,63 +1,82 @@
-//@flow
 import {DeviceEventEmitter} from "react-native";
 import {fromEvent} from "rxjs";
 
 import Config from "./Config.js";
 
+socket_io = require("socket.io-client");
+
 export default class BBSocket {
 
   //PUBLIC, STATIC
-  static getInstance(): BBSocket {
+  static getInstance() {
       if (!BBSocket.instance) BBSocket.instance = new BBSocket();
       return BBSocket.instance;
   }
 
   //PUBLIC, INSTANCE
-  open(onopen?: () => void, onmessage?: () => void) {
-    if (this.ws) this.close();
+  open(onopen) {
+    if (this.socket) this.close();
 
     this.serverUri = Config.serverUri;
-    this.ws = new WebSocket(this.serverUri);
-    this.ws.onopen = () => {
+
+    this.socket = socket_io(this.serverUri);
+
+    this.socket.on("connect", () => {
       if (onopen) onopen();
       console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
-    }
+    });
+    this.socket.on("disconnect", () => {
+      console.log(`Disconnected from brain-butler-server`);
+    });
 
-    this.ws.onmessage = (message) => {
-        const parsed = JSON.parse(message.data);
-        console.log(`Got a message`);
+    this.socket.on("start", () => {
+      DeviceEventEmitter.emit("start");
+    });
+    
+    this.socket.on("next", () => {
+      DeviceEventEmitter.emit("next");
+    });
 
-        if (parsed.type === "next") {
-          console.log("Emitting 'nextTrial'")
-          DeviceEventEmitter.emit("next");
-        }
-        else if (parsed.type === "start") {
-          DeviceEventEmitter.emit("start");
-        }
-    }
-    this.ws.onclose = (e) => {
-      console.log(`Closing connection to brain-butler-server at ${this.serverUri}`);
-    };
   }
-  send(packet) {
-      //Guards from lingering callbacks after close() has been called
-      if (this.ws) this.ws.send(packet);
-  }
+
   close() {
-      this.ws.close();
-      this.ws = null;
+    this.socket.close();
+    this.socket = null;
+  }
+
+  sendMathForm() {
+    const form = {
+      title: "Math Problem",
+      categories: ["Text"],
+      fields: [
+        {name: "solution", label: "Solution"}
+      ],
+    };
+    this.socket.emit("form", form);
+  }
+  sendPromptForm() {
+    const form = {
+      title: "Strategy",
+      categories: ["Choice"],
+      fields: [
+        {
+          name: "strategy",
+          labels: ["Fact Retrieval", "Procedure Use", "Other"],
+          values: ["factRetrieval", "procedureUse", "other"],
+          exclusive: true
+        }
+      ]
+    }
+    this.socket.emit("form", form);
   }
 
   //PRIVATE, STATIC
-  static instance: BBSocket = null;
+  static instance = null;
 
   //PRIVATE, INSTANCE
   constructor() {
-    this.ws = null;
+    this.socket = null;
     this.serverUri = null;
   }
-
-  ws: Websocket;
-  serverUri: string;
 
 }

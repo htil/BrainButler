@@ -105,7 +105,7 @@ export default class MathScreen extends React.Component<Props, State> {
     this.setState(prev => {
        return {warningText: "", textState: TextState.Wait}
     });
-    this.restoreApplication();
+    this.props.navigation.goBack(null);
   }
 
   rebrighten() {
