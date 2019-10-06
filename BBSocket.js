@@ -1,8 +1,7 @@
 import {DeviceEventEmitter} from "react-native";
 import {fromEvent} from "rxjs";
 
-import Config from "./Config.js";
-
+const props = require("./props.json");
 socket_io = require("socket.io-client");
 
 export default class BBSocket {
@@ -17,8 +16,7 @@ export default class BBSocket {
   open(onopen) {
     if (this.socket) this.close();
 
-    this.serverUri = Config.serverUri;
-
+    this.serverUri = `${props.ip}:${props.port}/subjects`
     this.socket = socket_io(this.serverUri);
 
     this.socket.on("connect", () => {
