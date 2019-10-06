@@ -38,27 +38,26 @@ export default class MathScreen extends React.Component<Props, State> {
                            "3 ...Other?";
 
     this.state  = {warningText: "", textState: TextState.Wait};
-    this.intervals = [];
     this.timeouts = [];
     this.blankenTimeout = -1;
+    this.experimenting = false;
 
     this.controller = new Controller();
-    this.problemSet = new ProblemSet(problems);
 
     this.startCallback = () => this.startExperiment();
     this.nextCallback = () => {
-
       if (this.state.textState === TextState.Strategy) {
         if (this.problemSet.hasNext()) this.nextTrial();
-        else                           this.endExperiment();
+        else                           this.controller.socket.socket.emit("end");
       }
       else {
         this.displayStrategyPrompt();
       }
-    }
+    };
+    this.endCallback = () => this.endExperiment();
     DeviceEventEmitter.addListener("next", this.nextCallback);
     DeviceEventEmitter.addListener("start", this.startCallback);
-
+    DeviceEventEmitter.addListener("end", this.endCallback);
   }
   render() {
     const flexPadding = styles.main.flex;
@@ -85,47 +84,54 @@ export default class MathScreen extends React.Component<Props, State> {
       </View>
     );
   }
-  componentWillUnmount() { this.restoreApplication(); }
-
-
-  startExperiment() {
-    this.setDarknessTimeout();
-    this.nextTrial();
-  }
-  restoreApplication() {
-    DeviceEventEmitter.removeListener("nextTrial", this.nextCallback);
+  componentWillUnmount() {
+    this.endExperiment();
+    DeviceEventEmitter.removeListener("next", this.nextCallback);
     DeviceEventEmitter.removeListener("start", this.startCallback);
-    this.intervals.forEach((id) => clearInterval(id));
-    this.timeouts.forEach((id) => clearTimeout(id));
     this.controller.destructor();
-    SystemSetting.setAppBrightness(Config.brightness.full);
   }
 
+  async startExperiment() {
+    this.problemSet = new ProblemSet(problems);
+    this.experimenting = true;
+    this.nextTrial();
+    await this.cycleBrightness();
+
+  }
   endExperiment() {
+    this.experimenting = false;
+    this.timeouts.forEach((id) => clearTimeout(id));
+    removeWarning(this);
+    SystemSetting.setAppBrightness(Config.brightness.full);
     this.setState(prev => {
        return {warningText: "", textState: TextState.Wait}
     });
-    this.props.navigation.goBack(null);
   }
 
-  rebrighten() {
-    this.setTimeout(() => {
+  async cycleBrightness(warning) {
+    if (warning === undefined || warning == null)
+      warning = true;
+
+    while (this.experimenting) {
+      const timeout = darknessTimeout();
+      await sleep(timeout - Config.darkness.warning);
+      if (!this.experimenting) break;
+
+      // Display warning for a brief bit
+      if (warning) warn (this);
+      await sleep(Config.darkness.warning);
+      if (!this.experimenting) break;
+
+      // Darken screen and remove warning at same time
+      removeWarning(this);
+      this.controller.darkenScreen();
+      await sleep(Config.darkness.length);
+      if (!this.experimenting) break;
+
       this.controller.brightenScreen();
-      this.setDarknessTimeout();
-    }, Config.darkness.length);
+    }
   }
 
-  setDarknessTimeout(warning: Boolean = true) {
-    const timeout = darknessTimeout();
-    this.setTimeout(() => {
-      if (warning) warn(this);
-      this.setTimeout(() => {
-        removeWarning(this);
-        this.controller.darkenScreen();
-        this.rebrighten();
-      }, Config.darkness.warning);
-    }, timeout - Config.darkness.warning);
-  }
 
   nextTrial() {
     this.nextProblem = this.problemSet.next();
@@ -157,6 +163,10 @@ export default class MathScreen extends React.Component<Props, State> {
       this.timeouts.push(setTimeout(callback, delay));
       if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
   }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function darknessTimeout() {

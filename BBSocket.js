@@ -34,6 +34,9 @@ export default class BBSocket {
     this.socket.on("next", () => {
       DeviceEventEmitter.emit("next");
     });
+    this.socket.on("end", () => {
+      DeviceEventEmitter.emit("end");
+    });
 
   }
 

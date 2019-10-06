@@ -12,11 +12,13 @@ function warn(view: Object) {
 }
 function removeWarning(view: Object) {
   view.setState((prev) => {
+      if (prev.warningText.length > 0)
+        view.controller.recordEvent({
+          type: "event", name: "dispWarning",
+          value: false, timestamp: Date.now()
+        });
+
       return {text: prev.text, warningText: ""}
-  });
-  view.controller.recordEvent({
-    type: "event", name: "dispWarning",
-    value: false, timestamp: Date.now()
   });
 }
 
