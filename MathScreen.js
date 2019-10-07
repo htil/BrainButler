@@ -2,12 +2,13 @@
 import {View, Text, StyleSheet, DeviceEventEmitter} from "react-native";
 import React from "react";
 
-//3rd party libraries
-import SystemSetting from "react-native-system-setting";
+// 3rd party libraries
+import socket_io from "socket.io-client";
 
-import Controller from "./Controller.js";
+// Local
+import Dimmer from "./Dimmer.js";
 import Config from "./Config.js";
-
+import net_props from "./props.json";
 import problems from "./problems.json";
 import ProblemSet from "./ProblemSet.js";
 
@@ -42,23 +43,28 @@ export default class MathScreen extends React.Component<Props, State> {
     this.blankenTimeout = -1;
     this.experimenting = false;
 
-    this.controller = new Controller();
+    this.serverUri = `${net_props.ip}:${net_props.port}/subjects`;
+    this.socket = socket_io(this.serverUri);
+    this.dimmer = new Dimmer( (val) => {} );
 
-    this.startCallback = () => this.startExperiment();
-    this.nextCallback = () => {
+    this.socket.on("connect", () => {
+      console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
+    });
+    this.socket.on("disconnect", () => {
+      console.log(`Disconnected from brain-butler-server`);
+    });
+    this.socket.on("start",() => this.startExperiment());
+    this.socket.on("end", () => this.endExperiment() );
+    this.socket.on("next", () => {
       if (this.state.textState === TextState.Strategy) {
         if (this.problemSet.hasNext()) this.nextTrial();
-        else                           this.controller.socket.socket.emit("end");
+        else                           this.socket.emit("end");
       }
-      else {
-        this.displayStrategyPrompt();
-      }
-    };
-    this.endCallback = () => this.endExperiment();
-    DeviceEventEmitter.addListener("next", this.nextCallback);
-    DeviceEventEmitter.addListener("start", this.startCallback);
-    DeviceEventEmitter.addListener("end", this.endCallback);
+      else                             this.displayStrategyPrompt();
+    });
+
   }
+
   render() {
     const flexPadding = styles.main.flex;
     const {textState} = this.state;
@@ -86,9 +92,7 @@ export default class MathScreen extends React.Component<Props, State> {
   }
   componentWillUnmount() {
     this.endExperiment();
-    DeviceEventEmitter.removeListener("next", this.nextCallback);
-    DeviceEventEmitter.removeListener("start", this.startCallback);
-    this.controller.destructor();
+    this.socket.close();
   }
 
   async startExperiment() {
@@ -102,7 +106,8 @@ export default class MathScreen extends React.Component<Props, State> {
     this.experimenting = false;
     this.timeouts.forEach((id) => clearTimeout(id));
     removeWarning(this);
-    SystemSetting.setAppBrightness(Config.brightness.full);
+    this.dimmer.brightenScreen();
+
     this.setState(prev => {
        return {warningText: "", textState: TextState.Wait}
     });
@@ -124,11 +129,11 @@ export default class MathScreen extends React.Component<Props, State> {
 
       // Darken screen and remove warning at same time
       removeWarning(this);
-      this.controller.darkenScreen();
+      this.dimmer.darkenScreen();
       await sleep(Config.darkness.length);
       if (!this.experimenting) break;
 
-      this.controller.brightenScreen();
+      this.dimmer.brightenScreen();
     }
   }
 
@@ -141,7 +146,7 @@ export default class MathScreen extends React.Component<Props, State> {
 
   displayStrategyPrompt() {
     this.setState(prev => {return {textState: TextState.Strategy} });
-    this.controller.sendPromptForm();
+    this.sendPromptForm();
   }
   displayFixationPoint() {
     this.setState(prev => { return {textState: TextState.Fixation} });
@@ -155,7 +160,7 @@ export default class MathScreen extends React.Component<Props, State> {
   displayProblem() {
       this.setState(prev => { return {textState: TextState.Problem}; });
       this.blankenTimeout = this.setTimeout(() => {this.displayBlankScreen();}, 7000);
-      this.controller.sendMathForm();
+      this.sendMathForm();
   }
 
 
@@ -163,6 +168,33 @@ export default class MathScreen extends React.Component<Props, State> {
       this.timeouts.push(setTimeout(callback, delay));
       if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
   }
+
+  sendMathForm() {
+    const form = {
+      title: "Math Problem",
+      categories: ["Text"],
+      fields: [
+        {name: "solution", label: "Solution"}
+      ],
+    };
+    this.socket.emit("form", form);
+  }
+  sendPromptForm() {
+    const form = {
+      title: "Strategy",
+      categories: ["Choice"],
+      fields: [
+        {
+          name: "strategy",
+          labels: ["Fact Retrieval", "Procedure Use", "Other"],
+          values: ["factRetrieval", "procedureUse", "other"],
+          exclusive: true
+        }
+      ]
+    }
+    this.socket.emit("form", form);
+  }
+
 }
 
 function sleep(ms) {

@@ -5,18 +5,13 @@ function warn(view: Object) {
       const text = prev.text;
       return {text, warningText: "About to darken"};
     });
-    view.controller.recordEvent({
-      type: "event", name: "dispWarning",
-      value: true, timestamp: Date.now()
-    });
+
 }
 function removeWarning(view: Object) {
   view.setState((prev) => {
-      if (prev.warningText.length > 0)
-        view.controller.recordEvent({
-          type: "event", name: "dispWarning",
-          value: false, timestamp: Date.now()
-        });
+      if (prev.warningText.length > 0) {
+
+      }
 
       return {text: prev.text, warningText: ""}
   });
