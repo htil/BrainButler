@@ -9,8 +9,7 @@ import socket_io from "socket.io-client";
 import Dimmer from "./Dimmer.js";
 import Config from "./Config.js";
 import net_props from "./props.json";
-import problems from "./problems.json";
-import ProblemSet from "./ProblemSet.js";
+import GrabnerProblems from "./GrabnerProblems.js";
 
 import {warn, removeWarning} from "./warnings.js";
 
@@ -96,7 +95,8 @@ export default class MathScreen extends React.Component<Props, State> {
   }
 
   async startExperiment() {
-    this.problemSet = new ProblemSet(problems);
+    this.problemSet = new GrabnerProblems();
+
     this.experimenting = true;
     this.nextTrial();
     await this.cycleBrightness();
