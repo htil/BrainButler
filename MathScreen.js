@@ -61,7 +61,6 @@ export default class MathScreen extends React.Component<Props, State> {
       }
       else                             this.displayStrategyPrompt();
     });
-
   }
 
   render() {
