@@ -23,7 +23,6 @@ export default class GrabnerProblems extends ProblemSet {
         const indices = permutation(unshuffled.length, this.random);
 
         this.problems = indices.map(ind => unshuffled[ind]);
-        this.problems = this.problems.slice(0,2);
         this.index = 0;
     }
 
