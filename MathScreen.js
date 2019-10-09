@@ -10,6 +10,9 @@ import Dimmer from "./Dimmer.js";
 import Config from "./Config.js";
 import net_props from "./props.json";
 import GrabnerProblems from "./GrabnerProblems.js";
+import {eegObservable} from "./Streaming";
+
+import {epoch} from "@neurosity/pipes";
 
 const TextState = {
   Strategy : 0,
@@ -42,6 +45,7 @@ export default class MathScreen extends React.Component<Props, State> {
     this.giveWarning = true;
 
     this.serverUri = `${net_props.ip}:${net_props.port}/subjects`;
+    console.log(`Trying to connect to ${this.serverUri}`);
     this.socket = socket_io(this.serverUri);
     this.dimmer = new Dimmer(brightness => {
       this.socket.emit("event",{
@@ -99,12 +103,22 @@ export default class MathScreen extends React.Component<Props, State> {
   async startExperiment() {
     this.problemSet = new GrabnerProblems();
 
+    this.subscription = eegObservable
+                        .pipe(epoch({duration: 256, interval:256}))
+                        .subscribe(epoch => {
+                          this.socket.emit("event",{
+                            type:"eeg", eeg:epoch, timestamp: Date.now()
+                          });
+                        });
+
     this.experimenting = true;
     this.nextTrial();
     await this.cycleBrightness();
 
   }
   endExperiment() {
+    if (this.subscription) this.subscription.unsubscribe();
+
     this.experimenting = false;
     this.timeouts.forEach((id) => clearTimeout(id));
     this.clearWarning();

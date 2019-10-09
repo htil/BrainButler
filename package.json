@@ -7,6 +7,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@neurosity/pipes": "^3.2.3",
     "brain-butler-schema": "0.0.1",
     "fy-random": "^1.0.1",
     "metro-react-native-babel-preset": "^0.53.1",
