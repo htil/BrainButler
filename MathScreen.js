@@ -11,8 +11,6 @@ import Config from "./Config.js";
 import net_props from "./props.json";
 import GrabnerProblems from "./GrabnerProblems.js";
 
-import {warn, removeWarning} from "./warnings.js";
-
 const TextState = {
   Strategy : 0,
   Problem : 1,
@@ -41,10 +39,15 @@ export default class MathScreen extends React.Component<Props, State> {
     this.timeouts = [];
     this.blankenTimeout = -1;
     this.experimenting = false;
+    this.giveWarning = true;
 
     this.serverUri = `${net_props.ip}:${net_props.port}/subjects`;
     this.socket = socket_io(this.serverUri);
-    this.dimmer = new Dimmer( (val) => {} );
+    this.dimmer = new Dimmer(brightness => {
+      this.socket.emit("event",{
+        timestamp: Date.now(), type: "brightness",brightness
+      });
+    });
 
     this.socket.on("connect", () => {
       console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
@@ -104,7 +107,7 @@ export default class MathScreen extends React.Component<Props, State> {
   endExperiment() {
     this.experimenting = false;
     this.timeouts.forEach((id) => clearTimeout(id));
-    removeWarning(this);
+    this.clearWarning();
     this.dimmer.brightenScreen();
 
     this.setState(prev => {
@@ -112,22 +115,18 @@ export default class MathScreen extends React.Component<Props, State> {
     });
   }
 
-  async cycleBrightness(warning) {
-    if (warning === undefined || warning == null)
-      warning = true;
-
+  async cycleBrightness() {
     while (this.experimenting) {
       const timeout = darknessTimeout();
       await sleep(timeout - Config.darkness.warning);
       if (!this.experimenting) break;
 
-      // Display warning for a brief bit
-      if (warning) warn (this);
+      this.mayWarn();
       await sleep(Config.darkness.warning);
       if (!this.experimenting) break;
 
       // Darken screen and remove warning at same time
-      removeWarning(this);
+      this.clearWarning();
       this.dimmer.darkenScreen();
       await sleep(Config.darkness.length);
       if (!this.experimenting) break;
@@ -144,22 +143,64 @@ export default class MathScreen extends React.Component<Props, State> {
   }
 
   displayStrategyPrompt() {
-    this.setState(prev => {return {textState: TextState.Strategy} });
+    this.setState(prev => {
+      this.socket.emit("event", {
+        type: "strategyPrompt", timestamp: Date.now(),
+        strategyPrompt: this.strategyPrompt
+      });
+      return {textState: TextState.Strategy}
+    });
     this.sendPromptForm();
   }
   displayFixationPoint() {
-    this.setState(prev => { return {textState: TextState.Fixation} });
+    this.setState(prev => {
+      this.socket.emit("event", {
+        type: "fixationPoint", timestamp: Date.now()
+      });
+      return {textState: TextState.Fixation}
+    });
   }
   displayBlankScreen() {
     this.setState(prev => {
-      if (this.state.textState === TextState.Problem) return {textState: TextState.Blank}
+      if (this.state.textState === TextState.Problem) {
+        this.socket.emit("event", {
+          type: "blankScreen", timestamp: Date.now()
+        });
+        return {textState: TextState.Blank}
+      }
       return prev;
     });
   }
   displayProblem() {
-      this.setState(prev => { return {textState: TextState.Problem}; });
-      this.blankenTimeout = this.setTimeout(() => {this.displayBlankScreen();}, 7000);
-      this.sendMathForm();
+    this.setState(prev => {
+      this.socket.emit("event", {
+        type: "problem", problem: this.nextProblem
+      });
+      return {textState: TextState.Problem};
+    });
+    this.blankenTimeout = this.setTimeout(() => {this.displayBlankScreen();}, 7000);
+    this.sendMathForm();
+  }
+
+  mayWarn() {
+    if (!this.giveWarning) return;
+    this.setState((prev) => {
+      const warningText = "About to darken";
+      this.socket.emit("event", {
+        type:"warning", warning: warningText, timestamp: Date.now()
+      });
+      return {text:prev.text, warningText};
+    });
+  }
+  clearWarning() {
+    if (this.state.warningText.length === 0) return;
+
+    this.setState((prev) => {
+      this.socket.emit("event",{
+        type: "removeWarning", timestamp: Date.now()
+      });
+      return {text: prev.text, warningText: ""}
+    });
   }
 
 
