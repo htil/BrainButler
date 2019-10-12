@@ -30,6 +30,7 @@ export default settings = {
     lowpass: 30,
     labPrefix: "HTIL",
     patientNumber: "0",
+    initialCondition: "C1",
     serverUri: `ws://${props.ip}:${props.port}`,
 
     problems: {

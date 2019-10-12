@@ -35,6 +35,8 @@ export default class GrabnerProblems extends ProblemSet {
         return this.index < this.problems.length;
     }
 
+    length() {return this.problems.length;}
+
     _genSmallSet() {
         //Present 1/2 the small addition problems twice
         const possSmalls = GrabnerProblems._getPossSmalls();

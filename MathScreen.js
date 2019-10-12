@@ -42,7 +42,6 @@ export default class MathScreen extends React.Component<Props, State> {
     this.timeouts = [];
     this.blankenTimeout = -1;
     this.experimenting = false;
-    this.giveWarning = true;
 
     this.serverUri = `${net_props.ip}:${net_props.port}/subjects`;
     console.log(`Trying to connect to ${this.serverUri}`);
@@ -101,7 +100,11 @@ export default class MathScreen extends React.Component<Props, State> {
   }
 
   async startExperiment() {
+    this.giveWarning = Config.initialCondition == "C1";
+    console.log(`Giving warnings? ${this.giveWarning}`);
+    this.sendCondition();
     this.problemSet = new GrabnerProblems();
+    this.problemsSeen = -1;
 
     this.subscription = eegObservable
                         .pipe(epoch({duration: 256, interval:256}))
@@ -151,6 +154,9 @@ export default class MathScreen extends React.Component<Props, State> {
 
 
   nextTrial() {
+    if (++this.problemsSeen >= this.problemSet.length() / 2)
+      this.switchConditions();
+
     this.nextProblem = this.problemSet.next();
     this.displayFixationPoint();
     this.setTimeout(() => { this.displayProblem(); }, 3000);
@@ -216,6 +222,10 @@ export default class MathScreen extends React.Component<Props, State> {
       return {text: prev.text, warningText: ""}
     });
   }
+  switchConditions() {
+    this.giveWarning = !this.giveWarning;
+    this.sendCondition();
+  }
 
 
   setTimeout(callback, delay: Number) {
@@ -223,6 +233,14 @@ export default class MathScreen extends React.Component<Props, State> {
       if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
   }
 
+
+  sendCondition() {
+    this.socket.emit("event", {
+      type: "condition",
+      conditon: this.giveWarning ? "C1" : "C2",
+      timestamp: Date.now()
+    });
+  }
   sendMathForm() {
     const form = {
       title: "Math Problem",
