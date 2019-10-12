@@ -70,27 +70,29 @@ export default class MathScreen extends React.Component<Props, State> {
   }
 
   render() {
-    const flexPadding = styles.main.flex;
+    //const flexPadding = styles.main.flex;
     const {textState} = this.state;
 
     return (
       <View style={{flex: 1}}>
-        <View style={{flex: flexPadding}}>
+
+        <View style={{flex: 2}}>
           <Text style={styles.warningText}>{this.state.warningText}</Text>
         </View>
-        <View style={styles.main}>
+        <View style={ {flex: 1} }>
           <Text style={styles.mainText}>
             {
               textState === TextState.Strategy ? this.strategyPrompt :
               textState === TextState.Problem  ? this.nextProblem    :
-              textState === TextState.Fixation ? "."                 :
+              textState === TextState.Fixation ? "\u2716"            :
               textState === TextState.Blank    ? ""                  :
               textState === TextState.Wait     ? this.waitingText    :
                                                  ""
             }
           </Text>
         </View>
-        <View style={{flex: flexPadding}}></View>
+        <View style={{flex: 2}}></View>
+
       </View>
     );
   }
