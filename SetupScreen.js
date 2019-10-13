@@ -25,7 +25,11 @@ export default class SetupScreen extends React.Component<Props, State>
   constructor(props)
   {
     super(props);
-    this.state = {patientNumber: Config.patientNumber};
+    this.state = {
+      patientNumber: Config.patientNumber,
+      ip: Config.serverIp,
+      ngrok: Config.ngrok
+    }
 
     this.museManager = MuseDeviceManager.getInstance();
     this.museSubscription = this.museManager.devices().subscribe(
@@ -45,12 +49,6 @@ export default class SetupScreen extends React.Component<Props, State>
 					</View>
 				</TouchableNativeFeedback>
 
-        <Label text="Patient Number"/>
-        <TextInput
-          style={{fontSize: 20, color: "gray", paddingLeft: 20}}
-          onChangeText={(code) => this.setpatientNumber(code)}
-          value={this.state.patientNumber}
-        />
 
         <Label text="Initial Condition"/>
         <RadioForm
@@ -62,11 +60,35 @@ export default class SetupScreen extends React.Component<Props, State>
           onPress={value => this.setInitialCondition(value)}
         />
 
+        <Label text="Ngrok Subdomain"/>
+        <MyTextInput
+          onChangeText={hex => this.setNgrok(hex) }
+          value={this.state.ngrok}
+        />
+
+        <Label text="IP Address"/>
+        <MyTextInput
+          onChangeText={ip => this.setIpAddress(ip) }
+          value={this.state.ip}
+        />
+
       </View>
     );
   }
 
   setInitialCondition(cond) { Config.initialCondition = cond; }
+
+  setNgrok(hex) {
+    hex = hex.trim();
+    Config.ngrok = hex;
+    this.setState({ngrok:hex});
+  }
+
+  setIpAddress(ip) {
+    ip = ip.trim();
+    Config.serverIp = ip;
+    this.setState({ip});
+  }
 
   setpatientNumber(patientNumber) {
       Config.patientNumber = patientNumber;
@@ -76,6 +98,17 @@ export default class SetupScreen extends React.Component<Props, State>
   {
     if (this.museSubscription) this.museSubscription.unsubscribe();
   }
+}
+
+function MyTextInput(props) {
+  return (
+   <TextInput
+    style={{fontSize: 20, color: "gray", paddingLeft: 20}}
+    onChangeText={props.onChangeText}
+    value={props.value}
+   />
+  );
+
 }
 
 function Label(props) {

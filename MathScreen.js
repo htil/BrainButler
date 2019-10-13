@@ -43,7 +43,12 @@ export default class MathScreen extends React.Component<Props, State> {
     this.blankenTimeout = -1;
     this.experimenting = false;
 
-    this.serverUri = `${net_props.ip}:${net_props.port}/subjects`;
+    if (Config.ngrok.length)
+      this.serverUri = `wss://${Config.ngrok}.ngrok.io`
+    else
+      this.serverUri = `ws://${Config.serverIp}:${Config.serverPort}`;
+    this.serverUri += "/subjects";
+
     console.log(`Trying to connect to ${this.serverUri}`);
     this.socket = socket_io(this.serverUri);
     this.dimmer = new Dimmer(brightness => {

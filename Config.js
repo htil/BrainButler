@@ -31,7 +31,9 @@ export default settings = {
     labPrefix: "HTIL",
     patientNumber: "0",
     initialCondition: "C1",
-    serverUri: `ws://${props.ip}:${props.port}`,
+    serverIp: props.ip,
+    serverPort: props.port,
+    ngrok: "",
 
     problems: {
       interval: 5000,
