@@ -8,11 +8,10 @@ import socket_io from "socket.io-client";
 // Local
 import Dimmer from "./Dimmer.js";
 import Config from "./Config.js";
-import net_props from "./props.json";
 import GrabnerProblems from "./GrabnerProblems.js";
 import {eegObservable} from "./Streaming";
 
-import {epoch} from "@neurosity/pipes";
+import {bufferCount} from "rxjs/operators";
 
 const TextState = {
   Strategy : 0,
@@ -108,13 +107,12 @@ export default class MathScreen extends React.Component<Props, State> {
 
   async startExperiment() {
     this.giveWarning = Config.initialCondition == "C1";
-    console.log(`Giving warnings? ${this.giveWarning}`);
     this.sendCondition();
     this.problemSet = new GrabnerProblems();
     this.problemsSeen = -1;
 
     this.subscription = eegObservable
-                        .pipe(epoch({duration: 256, interval:256}))
+                        .pipe(bufferCount(256))
                         .subscribe(epoch => {
                           this.socket.emit("event",{
                             type:"eeg", eeg:epoch, timestamp: Date.now()
