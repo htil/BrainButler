@@ -4,6 +4,7 @@ import React from "react";
 
 // 3rd party libraries
 import socket_io from "socket.io-client";
+const seedrandom = require("seedrandom");
 
 // Local
 import Dimmer from "./Dimmer.js";
@@ -42,10 +43,8 @@ export default class MathScreen extends React.Component<Props, State> {
     this.blankenTimeout = -1;
     this.experimenting = false;
 
-    if (Config.ngrok.length)
-      this.serverUri = `wss://${Config.ngrok}.ngrok.io`
-    else
-      this.serverUri = `ws://${Config.serverIp}:${Config.serverPort}`;
+    if (Config.ngrok.length) this.serverUri = `wss://${Config.ngrok}.ngrok.io`
+    else                     this.serverUri = `ws://${Config.serverIp}:${Config.serverPort}`;
     this.serverUri += "/subjects";
 
     console.log(`Trying to connect to ${this.serverUri}`);
@@ -57,24 +56,17 @@ export default class MathScreen extends React.Component<Props, State> {
     });
 
     this.socket.on("connect", () => {
-      console.log(`Connection to brain-butler-server opened at ${this.serverUri}`);
+      console.log(`Connection opened at ${this.serverUri}`);
     });
     this.socket.on("disconnect", () => {
       console.log(`Disconnected from brain-butler-server`);
     });
     this.socket.on("start",() => this.startExperiment());
     this.socket.on("end", () => this.endExperiment() );
-    this.socket.on("next", () => {
-      if (this.state.textState === TextState.Strategy) {
-        if (this.problemSet.hasNext()) this.nextTrial();
-        else                           this.socket.emit("end");
-      }
-      else                             this.displayStrategyPrompt();
-    });
-  }
+
+ }
 
   render() {
-    //const flexPadding = styles.main.flex;
     const {textState} = this.state;
 
     return (
@@ -111,6 +103,13 @@ export default class MathScreen extends React.Component<Props, State> {
     this.problemSet = new GrabnerProblems();
     this.problemsSeen = -1;
 
+    const rng = require("seedrandom")(0);
+    const shuffledBools = (n) =>
+      shuffle(Array(n).fill(true,0,n/2).fill(false,n/2), rng);
+
+    const n = this.problemSet.length();
+    this.dimScreen = [...shuffledBools(n/2),...shuffledBools(n/2)];
+
     this.subscription = eegObservable
                         .pipe(bufferCount(256))
                         .subscribe(epoch => {
@@ -121,7 +120,6 @@ export default class MathScreen extends React.Component<Props, State> {
 
     this.experimenting = true;
     this.nextTrial();
-    await this.cycleBrightness();
 
   }
   endExperiment() {
@@ -137,37 +135,36 @@ export default class MathScreen extends React.Component<Props, State> {
     });
   }
 
-  async cycleBrightness() {
-    while (this.experimenting) {
-      const timeout = darknessTimeout();
-      await sleep(timeout - Config.darkness.warning);
-      if (!this.experimenting) break;
-
-      this.mayWarn();
-      await sleep(Config.darkness.warning);
-      if (!this.experimenting) break;
-
-      // Darken screen and remove warning at same time
-      this.clearWarning();
-      this.dimmer.darkenScreen();
-      await sleep(Config.darkness.length);
-      if (!this.experimenting) break;
-
-      this.dimmer.brightenScreen();
-    }
-  }
-
 
   nextTrial() {
-    if (++this.problemsSeen >= this.problemSet.length() / 2)
+    const dimScreen = this.dimScreen;
+
+    if (++this.problemsSeen === this.problemSet.length() / 2)
       this.switchConditions();
+    else if (this.problemsSeen === this.problemSet.length())
+      this.socket.emit("end")
 
     this.nextProblem = this.problemSet.next();
+
     this.displayFixationPoint();
-    this.setTimeout(() => { this.displayProblem(); }, 3000);
+    this.setTimeout(() => { this.displayProblem(); }, Config.delays.problem);
+    if (this.giveWarning)
+      this.setTimeout(() => {this.displayWarning();}, Config.delays.warning);
+
+    this.setTimeout(() => {
+      this.clearWarning();
+      if (dimScreen[this.problemsSeen]) this.dimmer.darkenScreen();
+    }, Config.delays.darkness);
+
+
+    this.setTimeout(() => {
+      this.displayPrompt();
+      if (dimScreen[this.problemsSeen]) this.dimmer.brightenScreen();
+    }, Config.delays.prompt);
+    this.setTimeout(() => {this.nextTrial();}, Config.delays.nextTrial);
   }
 
-  displayStrategyPrompt() {
+  displayPrompt() {
     this.setState(prev => {
       this.socket.emit("event", {
         type: "strategyPrompt", timestamp: Date.now(),
@@ -203,12 +200,10 @@ export default class MathScreen extends React.Component<Props, State> {
       });
       return {textState: TextState.Problem};
     });
-    this.blankenTimeout = this.setTimeout(() => {this.displayBlankScreen();}, 7000);
     this.sendMathForm();
   }
 
-  mayWarn() {
-    if (!this.giveWarning) return;
+  displayWarning() {
     this.setState((prev) => {
       const warningText = "About to darken";
       this.socket.emit("event", {
@@ -219,7 +214,6 @@ export default class MathScreen extends React.Component<Props, State> {
   }
   clearWarning() {
     if (this.state.warningText.length === 0) return;
-
     this.setState((prev) => {
       this.socket.emit("event",{
         type: "removeWarning", timestamp: Date.now()
@@ -274,14 +268,16 @@ export default class MathScreen extends React.Component<Props, State> {
 
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+
+function showWarnings(n) {
+  let show = Array(n/2).fill(false);
+  show.push( Array(n/2).full(true) )
+
 }
 
-function darknessTimeout() {
-  const val = Config.darkness.minTimeout +
-    Math.random() * (Config.darkness.maxTimeout - Config.darkness.minTimeout);
-  return val;
+import {permutation} from "fy-random";
+function shuffle(arr, rng) {
+  return permutation(arr.length, rng).map(ind => arr[ind]);
 }
 
 const styles = StyleSheet.create({
