@@ -100,6 +100,7 @@ export default class MathScreen extends React.Component<Props, State> {
   async startExperiment() {
     this.giveWarning = Config.initialCondition == "C1";
     this.sendCondition();
+    this.sendStaticForms();
     this.problemSet = new GrabnerProblems();
     this.problemsSeen = -1;
 
@@ -232,6 +233,16 @@ export default class MathScreen extends React.Component<Props, State> {
       if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
   }
 
+  sendStaticForms() {
+    this.socket.emit("form", {
+      constant: true,
+      title: "Body Language",
+      categories: ["Choice"],
+      fields: [
+        {name: "movement", labels: ["Movement"], values: ["movement"], exclusive: true}
+      ]
+    });
+  }
 
   sendCondition() {
     this.socket.emit("event", {
