@@ -3,6 +3,7 @@ package com.brainbutler;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.zmxv.RNSound.RNSoundPackage;
 import com.corbt.keepawake.KCKeepAwakePackage;
 import com.ninty.system.setting.SystemSettingPackage;
 import com.reactlibrary.RNLibMusePackage;
@@ -26,6 +27,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNSoundPackage(),
             new KCKeepAwakePackage(),
             new SystemSettingPackage(),
             new RNLibMusePackage()

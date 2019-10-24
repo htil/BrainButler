@@ -17,6 +17,7 @@
     "react-native-keep-awake": "^4.0.0",
     "react-native-muse": "0.0.5",
     "react-native-simple-radio-button": "^2.7.4",
+    "react-native-sound": "^0.11.0",
     "react-native-system-setting": "^1.7.2",
     "react-navigation": "^2.18.3",
     "seedrandom": "^3.0.5",

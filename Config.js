@@ -8,7 +8,7 @@ var settings = {
     serverIp: "127.0.0.1",
     serverPort: 3001,
     ngrok: "",
-
+    soundPath: "beep.wav",
     delays: {
       problem: 6000,
       warning: 8000,

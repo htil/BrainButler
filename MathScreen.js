@@ -5,21 +5,22 @@ import React from "react";
 // 3rd party libraries
 import socket_io from "socket.io-client";
 import KeepAwake from "react-native-keep-awake";
+import Sound from "react-native-sound";
 const seedrandom = require("seedrandom");
 
 // Local
 import Dimmer from "./Dimmer.js";
 import Config from "./Config.js";
-import GrabnerProblems from "./GrabnerProblems.js";
-import {eegObservable} from "./Streaming";
+import GrabnerProblems from "./GrabnerProblems.js"; import {eegObservable} from "./Streaming";
 
 import {bufferCount} from "rxjs/operators";
 
 const TextState = {Strategy : 0,Problem : 1,Fixation : 2,Blank : 3,Wait : 4}
 type Props = {};
-type State = {warningText: string,textState: object};
+type State = {textState: object};
 export default class MathScreen extends React.Component<Props, State> {
   state: State;
+  beepSound: Sound;
 
   constructor(props) {
     super(props);
@@ -28,7 +29,7 @@ export default class MathScreen extends React.Component<Props, State> {
                            "2 ...Procedural? \n" +
                            "3 ...Other?";
 
-    this.state  = {warningText: "", textState: TextState.Wait};
+    this.state  = {textState: TextState.Wait};
     this.timeouts = [];
     this.experimenting = false;
 
@@ -53,6 +54,9 @@ export default class MathScreen extends React.Component<Props, State> {
     this.socket.on("start",() => this.startExperiment());
     this.socket.on("end", () => this.endExperiment() );
 
+    this.beepSound = new Sound(Config.soundPath, Sound.MAIN_BUNDLE, error => {
+      if (error) console.log(error);
+    });
  }
 
   render() {
@@ -122,7 +126,6 @@ export default class MathScreen extends React.Component<Props, State> {
 
     this.experimenting = false;
     this.timeouts.forEach((id) => clearTimeout(id));
-    this.clearWarning();
     this.dimmer.brightenScreen();
 
     this.setState(prev => {
@@ -147,10 +150,9 @@ export default class MathScreen extends React.Component<Props, State> {
     this.displayFixationPoint();
     this.setTimeout(() => { this.displayProblem(); }, delays.problem);
     if (this.giveWarning)
-      this.setTimeout(() => {this.displayWarning();}, delays.warning);
+      this.setTimeout(() => {this.provideWarning();}, delays.warning);
 
     this.setTimeout(() => {
-      this.clearWarning();
       if (dimScreen[this.problemsSeen]) this.dimmer.darkenScreen();
     }, delays.darkness);
 
@@ -201,22 +203,11 @@ export default class MathScreen extends React.Component<Props, State> {
     this.sendMathForm();
   }
 
-  displayWarning() {
-    this.setState((prev) => {
-      const warningText = "About to darken";
-      this.socket.emit("event", {
-        type:"warning", warning: warningText, timestamp: Date.now()
-      });
-      return {text:prev.text, warningText};
-    });
-  }
-  clearWarning() {
-    if (this.state.warningText.length === 0) return;
-    this.setState((prev) => {
-      this.socket.emit("event",{
-        type: "removeWarning", timestamp: Date.now()
-      });
-      return {text: prev.text, warningText: ""}
+  provideWarning() {
+    const timestamp = Date.now();
+    this.beepSound.play(success => {
+      if (!success) return;
+      this.socket.emit("event", {type: "tone", timestamp});
     });
   }
   switchConditions() {
