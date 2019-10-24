@@ -14,7 +14,14 @@ var settings = {
       warning: 5000,
       darkness: 7000,
       prompt: 10000,
-      nextTrial: 13000
+      nextTrial: 13000,
+      short: {
+        problem: 1500,
+        warning: 2500,
+        darkness: 3500,
+        prompt: 5000,
+        nextTrial: 6500
+      }
     },
 
 }

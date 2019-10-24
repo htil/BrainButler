@@ -29,7 +29,6 @@ type State = {
 };
 export default class MathScreen extends React.Component<Props, State> {
   state: State;
-  blankenTimeout: number;
 
   constructor(props) {
     super(props);
@@ -40,7 +39,6 @@ export default class MathScreen extends React.Component<Props, State> {
 
     this.state  = {warningText: "", textState: TextState.Wait};
     this.timeouts = [];
-    this.blankenTimeout = -1;
     this.experimenting = false;
 
     if (Config.ngrok.length) this.serverUri = `wss://${Config.ngrok}.ngrok.io`
@@ -138,31 +136,34 @@ export default class MathScreen extends React.Component<Props, State> {
 
 
   nextTrial() {
-    const dimScreen = this.dimScreen;
-
-    if (++this.problemsSeen === this.problemSet.length() / 2)
+    ++this.problemsSeen;
+    if (this.problemsSeen === this.problemSet.length() / 2)
       this.switchConditions();
-    else if (this.problemsSeen === this.problemSet.length())
-      this.socket.emit("end")
+    else if (this.problemsSeen >= this.problemSet.length()) {
+      this.endExperiment();
+      return;
+    }
 
+    const delays = Config.delays;
+    const dimScreen = this.dimScreen;
     this.nextProblem = this.problemSet.next();
 
     this.displayFixationPoint();
-    this.setTimeout(() => { this.displayProblem(); }, Config.delays.problem);
+    this.setTimeout(() => { this.displayProblem(); }, delays.problem);
     if (this.giveWarning)
-      this.setTimeout(() => {this.displayWarning();}, Config.delays.warning);
+      this.setTimeout(() => {this.displayWarning();}, delays.warning);
 
     this.setTimeout(() => {
       this.clearWarning();
       if (dimScreen[this.problemsSeen]) this.dimmer.darkenScreen();
-    }, Config.delays.darkness);
+    }, delays.darkness);
 
 
     this.setTimeout(() => {
       this.displayPrompt();
       if (dimScreen[this.problemsSeen]) this.dimmer.brightenScreen();
-    }, Config.delays.prompt);
-    this.setTimeout(() => {this.nextTrial();}, Config.delays.nextTrial);
+    }, delays.prompt);
+    this.setTimeout(() => {this.nextTrial();}, delays.nextTrial);
   }
 
   displayPrompt() {
