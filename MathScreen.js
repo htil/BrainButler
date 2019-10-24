@@ -4,6 +4,7 @@ import React from "react";
 
 // 3rd party libraries
 import socket_io from "socket.io-client";
+import KeepAwake from "react-native-keep-awake";
 const seedrandom = require("seedrandom");
 
 // Local
@@ -14,19 +15,9 @@ import {eegObservable} from "./Streaming";
 
 import {bufferCount} from "rxjs/operators";
 
-const TextState = {
-  Strategy : 0,
-  Problem : 1,
-  Fixation : 2,
-  Blank : 3,
-  Wait : 4
-}
-
+const TextState = {Strategy : 0,Problem : 1,Fixation : 2,Blank : 3,Wait : 4}
 type Props = {};
-type State = {
-  warningText: string,
-  textState: object,
-};
+type State = {warningText: string,textState: object};
 export default class MathScreen extends React.Component<Props, State> {
   state: State;
 
@@ -90,9 +81,14 @@ export default class MathScreen extends React.Component<Props, State> {
       </View>
     );
   }
+
+  componentDidMount() {
+    KeepAwake.activate();
+  }
   componentWillUnmount() {
     this.endExperiment();
     this.socket.close();
+    KeepAwake.deactivate();
   }
 
   async startExperiment() {
@@ -144,7 +140,7 @@ export default class MathScreen extends React.Component<Props, State> {
       return;
     }
 
-    const delays = Config.delays;
+    const delays = Config.delays.short;
     const dimScreen = this.dimScreen;
     this.nextProblem = this.problemSet.next();
 
