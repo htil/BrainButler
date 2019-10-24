@@ -10,17 +10,17 @@ var settings = {
     ngrok: "",
 
     delays: {
-      problem: 3000,
-      warning: 5000,
-      darkness: 7000,
-      prompt: 10000,
-      nextTrial: 13000,
+      problem: 6000,
+      warning: 8000,
+      darkness: 10000,
+      prompt: 13000,
+      nextTrial: 22000,
       short: {
-        problem: 1500,
-        warning: 2500,
-        darkness: 3500,
-        prompt: 5000,
-        nextTrial: 6500
+        problem: 3000,
+        warning: 4000,
+        darkness: 5000,
+        prompt: 6500,
+        nextTrial: 11000
       }
     },
 
