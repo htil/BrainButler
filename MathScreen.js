@@ -77,7 +77,7 @@ export default class MathScreen extends React.Component<Props, State> {
           <Text style={styles.mainText}>
             {
               textState === TextState.Strategy ? this.strategyPrompt :
-              textState === TextState.Problem  ? this.nextProblem    :
+              textState === TextState.Problem  ? this.problem    :
               textState === TextState.Fixation ? "\u2716"            :
               textState === TextState.Blank    ? ""                  :
               textState === TextState.Wait     ? this.waitingText    :
@@ -165,7 +165,7 @@ export default class MathScreen extends React.Component<Props, State> {
   async trial() {
     if (!this.practice) this.darkening();
     const delays = Config.delays.short;
-    this.nextProblem = this.problemSet.next();
+    this.problem = this.problemSet.next();
 
     let timePassed = 0;
 
@@ -214,7 +214,7 @@ export default class MathScreen extends React.Component<Props, State> {
   displayProblem() {
     this.setState(prev => {
       this.socket.emit("event", {
-        type: "problem", problem: this.nextProblem
+        type: "problem", problem: this.problem
       });
       return {textState: TextState.Problem};
     });
@@ -259,10 +259,15 @@ export default class MathScreen extends React.Component<Props, State> {
   }
   sendMathForm() {
     const form = {
-      title: "Math Problem",
-      categories: ["Text"],
+      title: this.problem,
+      categories: ["Choice"],
       fields: [
-        {name: "solution", label: "Solution"}
+        {
+          name: this.problem,
+          labels: ["Correct", "Incorrect"],
+          values: ["correct", "incorrect"],
+          exclusive: true
+        }
       ],
     };
     this.socket.emit("form", form);
