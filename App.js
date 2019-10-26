@@ -25,20 +25,33 @@ class MenuScreen extends React.Component
 		return (
 			<View style={{flex: 1}}>
 
-		    <TouchableNativeFeedback  onPress={()=>navigate("Experiment", {refresh, title: "Experiment"})}>
-					<View style={Styles.smallButton}>
-						<Text style={Styles.buttonText}>Experiment</Text>
-					</View>
-				</TouchableNativeFeedback>
+				<SimpleButton
+					onPress={()=>navigate("Experiment", {refresh, title: "Experiment"})}
+					text="Experiment"
+				/>
 
-				<TouchableNativeFeedback  onPress={()=>navigate("Setup", {title: "Setup"})}>
-					<View style={Styles.smallButton}>
-						<Text style={Styles.buttonText}>Researcher Options</Text>
-					</View>
-				</TouchableNativeFeedback>
+				<SimpleButton
+					onPress={()=>navigate("Practice", {refresh, practice: true, title: "Practice"} )}
+					text="Practice"
+				/>
+
+				<SimpleButton
+					onPress={()=>navigate("Setup", {title: "Setup"})}
+					text="Setup"
+				/>
 			</View>
 		);
 	}
+}
+
+function SimpleButton(props) {
+	return (
+		<TouchableNativeFeedback  onPress={props.onPress}>
+			<View style={Styles.smallButton}>
+				<Text style={Styles.buttonText}>{props.text}</Text>
+			</View>
+		</TouchableNativeFeedback>
+	);
 }
 
 function refresh() {
@@ -47,8 +60,21 @@ function refresh() {
 
 const App = createStackNavigator(
 	{
-		Menu: {screen: MenuScreen},
-		Experiment: {screen: MathScreen},
+		Menu: {
+			screen: MenuScreen
+		},
+		Experiment: {
+			screen: MathScreen,
+			params: {
+
+			}
+		},
+		Practice: {
+			screen: MathScreen,
+			params: {
+
+			}
+		},
 		Setup: {screen: SetupScreen}
 	},
 	{

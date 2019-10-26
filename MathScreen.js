@@ -11,16 +11,19 @@ const seedrandom = require("seedrandom");
 // Local
 import Dimmer from "./Dimmer.js";
 import Config from "./Config.js";
-import GrabnerProblems from "./GrabnerProblems.js"; import {eegObservable} from "./Streaming";
+import GrabnerProblems from "./GrabnerProblems.js";
+import PracticeProblems from "./PracticeProblems";
+import {eegObservable} from "./Streaming";
 
 import {bufferCount} from "rxjs/operators";
 
 const TextState = {Strategy : 0,Problem : 1,Fixation : 2,Blank : 3,Wait : 4}
-type Props = {};
+type Props = {navigation: object};
 type State = {textState: object};
 export default class MathScreen extends React.Component<Props, State> {
   state: State;
   beepSound: Sound;
+  practice: Boolean;
 
   constructor(props) {
     super(props);
@@ -32,6 +35,8 @@ export default class MathScreen extends React.Component<Props, State> {
     this.state  = {textState: TextState.Wait};
     this.timeouts = [];
     this.experimenting = false;
+    this.practice = this.props.navigation.getParam("practice", false);
+    this.problemSet = this.practice ? new PracticeProblems() : new GrabnerProblems();
 
     if (Config.ngrok.length) this.serverUri = `wss://${Config.ngrok}.ngrok.io`
     else                     this.serverUri = `ws://${Config.serverIp}:${Config.serverPort}`;
@@ -51,7 +56,7 @@ export default class MathScreen extends React.Component<Props, State> {
     this.socket.on("disconnect", () => {
       console.log(`Disconnected from brain-butler-server`);
     });
-    this.socket.on("start",() => this.startExperiment());
+    this.socket.on("start",() => this.experiment());
     this.socket.on("end", () => this.endExperiment() );
 
     this.beepSound = new Sound(Config.soundPath, Sound.MAIN_BUNDLE, error => {
@@ -95,20 +100,19 @@ export default class MathScreen extends React.Component<Props, State> {
     KeepAwake.deactivate();
   }
 
-  async startExperiment() {
+  prepDarkenings() {
     this.giveWarning = Config.initialCondition == "C1";
     this.sendCondition();
-    this.sendStaticForms();
-    this.problemSet = new GrabnerProblems();
-    this.problemsSeen = -1;
-
     const rng = require("seedrandom")(0);
     const shuffledBools = (n) =>
       shuffle(Array(n).fill(true,0,n/2).fill(false,n/2), rng);
-
     const n = this.problemSet.length();
     this.dimScreen = [...shuffledBools(n/2),...shuffledBools(n/2)];
 
+  }
+
+  async experiment() {
+    this.problemSet.reset();
     this.subscription = eegObservable
                         .pipe(bufferCount(256))
                         .subscribe(epoch => {
@@ -116,10 +120,15 @@ export default class MathScreen extends React.Component<Props, State> {
                             type:"eeg", eeg:epoch, timestamp: Date.now()
                           });
                         });
+    this.sendStaticForms();
 
+    if (!this.practice) this.prepDarkenings();
     this.experimenting = true;
-    this.nextTrial();
 
+    this.problemsSeen = 0;
+    while (this.problemsSeen++ < this.problemSet.length()) await this.trial();
+
+    this.endExperiment();
   }
   endExperiment() {
     if (this.subscription) this.subscription.unsubscribe();
@@ -134,34 +143,43 @@ export default class MathScreen extends React.Component<Props, State> {
   }
 
 
-  nextTrial() {
-    ++this.problemsSeen;
-    if (this.problemsSeen === this.problemSet.length() / 2)
-      this.switchConditions();
-    else if (this.problemsSeen >= this.problemSet.length()) {
-      this.endExperiment();
-      return;
-    }
 
-    const delays = Config.delays.short;
+  async darkening() {
+    if (this.problemsSeen === this.problemSet.length() / 2) this.switchConditions();
     const dimScreen = this.dimScreen;
+    const delays = Config.delays.short;
+
+    let timePassed = 0;
+    await sleep(delays.warning);
+    if (this.giveWarning) this.provideWarning();
+    timePassed += delays.warning;
+
+    await sleep(delays.darkness - timePassed);
+    if (dimScreen[this.problemsSeen]) this.dimmer.darkenScreen();
+    timePassed += delays.darkness - timePassed;
+
+    await sleep(delays.prompt - timePassed);
+    this.dimmer.brightenScreen();
+  }
+
+  async trial() {
+    if (!this.practice) this.darkening();
+    const delays = Config.delays.short;
     this.nextProblem = this.problemSet.next();
 
+    let timePassed = 0;
+
     this.displayFixationPoint();
-    this.setTimeout(() => { this.displayProblem(); }, delays.problem);
-    if (this.giveWarning)
-      this.setTimeout(() => {this.provideWarning();}, delays.warning);
+    await sleep(delays.problem);
+    timePassed += delays.problem;
+    this.displayProblem();
 
-    this.setTimeout(() => {
-      if (dimScreen[this.problemsSeen]) this.dimmer.darkenScreen();
-    }, delays.darkness);
+    await sleep(delays.prompt - timePassed);
+    timePassed += (delays.prompt - timePassed);
+    this.displayPrompt();
 
-
-    this.setTimeout(() => {
-      this.displayPrompt();
-      if (dimScreen[this.problemsSeen]) this.dimmer.brightenScreen();
-    }, delays.prompt);
-    this.setTimeout(() => {this.nextTrial();}, delays.nextTrial);
+    await sleep(delays.nextTrial - timePassed);
+    timePassed += (delays.nextTrial - timePassed);
   }
 
   displayPrompt() {
@@ -265,6 +283,10 @@ export default class MathScreen extends React.Component<Props, State> {
     this.socket.emit("form", form);
   }
 
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 

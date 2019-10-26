@@ -3,4 +3,5 @@ export default class ProblemSet {
     next() { }
     hasNext() {}
     length() {}
+    reset() {}
 }

@@ -23,6 +23,7 @@ export default class GrabnerProblems extends ProblemSet {
         const indices = permutation(unshuffled.length, this.random);
 
         this.problems = indices.map(ind => unshuffled[ind]);
+        this.problems = this.problems.slice(0,12);
         this.index = 0;
     }
 
@@ -35,7 +36,11 @@ export default class GrabnerProblems extends ProblemSet {
         return this.index < this.problems.length;
     }
 
+    reset() {this.index = 0;}
+
     length() {return this.problems.length;}
+
+    toArray() {return this.problems.slice();}
 
     _genSmallSet() {
         //Present 1/2 the small addition problems twice
