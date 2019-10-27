@@ -17,26 +17,26 @@ import {eegObservable} from "./Streaming";
 
 import {bufferCount} from "rxjs/operators";
 
-const TextState = {Strategy : 0,Problem : 1,Fixation : 2,Blank : 3,Wait : 4}
+const TextState = {Strategy : 0,Problem : 1,Fixation : 2,Blank : 3,Wait : 4, Pause: 5};
 type Props = {navigation: object};
 type State = {textState: object};
 export default class MathScreen extends React.Component<Props, State> {
   state: State;
   beepSound: Sound;
   practice: Boolean;
+  toPause: Boolean;
 
   constructor(props) {
     super(props);
-    this.waitingText = "Waiting for researcher...";
     this.strategyPrompt =  "1 ...Retrieval? \n" +
                            "2 ...Procedural? \n" +
                            "3 ...Other?";
 
     this.state  = {textState: TextState.Wait};
     this.timeouts = [];
-    this.experimenting = false;
     this.practice = this.props.navigation.getParam("practice", false);
     this.problemSet = this.practice ? new PracticeProblems() : new GrabnerProblems();
+    this.toPause = false;
 
     if (Config.ngrok.length) this.serverUri = `wss://${Config.ngrok}.ngrok.io`
     else                     this.serverUri = `ws://${Config.serverIp}:${Config.serverPort}`;
@@ -56,8 +56,10 @@ export default class MathScreen extends React.Component<Props, State> {
     this.socket.on("disconnect", () => {
       console.log(`Disconnected from brain-butler-server`);
     });
-    this.socket.on("start",() => this.experiment());
-    this.socket.on("end", () => this.endExperiment() );
+    this.socket.on("start", async () => {await this.experiment()});
+    this.socket.on("continue", async () => {await this.continueExperiment();});
+    this.socket.on("pause", () => {this.toPause = true;});
+    this.socket.on("end", () => this.stop() );
 
     this.beepSound = new Sound(Config.soundPath, Sound.MAIN_BUNDLE, error => {
       if (error) console.log(error);
@@ -66,27 +68,23 @@ export default class MathScreen extends React.Component<Props, State> {
 
   render() {
     const {textState} = this.state;
-
     return (
       <View style={{flex: 1}}>
-
-        <View style={{flex: 2}}>
-          <Text style={styles.warningText}>{this.state.warningText}</Text>
-        </View>
+        <View style={{flex: 2}}></View>
         <View style={ {flex: 1} }>
           <Text style={styles.mainText}>
             {
-              textState === TextState.Strategy ? this.strategyPrompt :
-              textState === TextState.Problem  ? this.problem    :
-              textState === TextState.Fixation ? "\u2716"            :
-              textState === TextState.Blank    ? ""                  :
-              textState === TextState.Wait     ? this.waitingText    :
+              textState === TextState.Strategy ? this.strategyPrompt            :
+              textState === TextState.Problem  ? this.problem                   :
+              textState === TextState.Fixation ? "\u2716"                       :
+              textState === TextState.Blank    ? ""                             :
+              textState === TextState.Wait     ? "Waiting for Researcher..."    :
+              textState === TextState.Pause    ? "Paused"                       :
                                                  ""
             }
           </Text>
         </View>
         <View style={{flex: 2}}></View>
-
       </View>
     );
   }
@@ -95,7 +93,7 @@ export default class MathScreen extends React.Component<Props, State> {
     KeepAwake.activate();
   }
   componentWillUnmount() {
-    this.endExperiment();
+    this.stop();
     this.socket.close();
     KeepAwake.deactivate();
   }
@@ -108,41 +106,48 @@ export default class MathScreen extends React.Component<Props, State> {
       shuffle(Array(n).fill(true,0,n/2).fill(false,n/2), rng);
     const n = this.problemSet.length();
     this.dimScreen = [...shuffledBools(n/2),...shuffledBools(n/2)];
-
   }
 
   async experiment() {
     this.problemSet.reset();
+    this.sendStaticForms();
+    if (!this.practice) this.prepDarkenings();
+
+    this.problemsSeen = 0;
+    await this.continueExperiment();
+  }
+
+  async continueExperiment() {
+    this.toPause = false;
     this.subscription = eegObservable
-                        .pipe(bufferCount(256))
+                        .pipe(bufferCount(8))
                         .subscribe(epoch => {
                           this.socket.emit("event",{
                             type:"eeg", eeg:epoch, timestamp: Date.now()
                           });
                         });
-    this.sendStaticForms();
 
-    if (!this.practice) this.prepDarkenings();
-    this.experimenting = true;
-
-    this.problemsSeen = 0;
-    while (this.problemsSeen++ < this.problemSet.length()) await this.trial();
-
-    this.endExperiment();
+    while (this.problemsSeen < this.problemSet.length() && !this.toPause) {
+      await this.trial();
+      ++this.problemsSeen;
+    }
+    if (this.problemsSeen >= this.problemSet.length()) this.stop(false);
+    else                                               this.stop(true);
   }
-  endExperiment() {
-    if (this.subscription) this.subscription.unsubscribe();
 
-    this.experimenting = false;
-    this.timeouts.forEach((id) => clearTimeout(id));
+  stop(temporary = false) {
     this.dimmer.brightenScreen();
-
-    this.setState(prev => {
-       return {warningText: "", textState: TextState.Wait}
+    const textState = temporary ? TextState.Pause : TextState.Wait;
+    this.toPause = false;
+    this.setState(prev => { return {textState} });
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      this.subscription = null;
+    }
+    this.socket.emit("event", {
+      type: "paused", timestamp: Date.now()
     });
   }
-
-
 
   async darkening() {
     if (this.problemsSeen === this.problemSet.length() / 2) this.switchConditions();
@@ -233,11 +238,6 @@ export default class MathScreen extends React.Component<Props, State> {
     this.sendCondition();
   }
 
-
-  setTimeout(callback, delay: Number) {
-      this.timeouts.push(setTimeout(callback, delay));
-      if (this.timeouts.length > 30) this.timeouts = this.timeouts.slice(10);
-  }
 
   sendStaticForms() {
     this.socket.emit("form", {
