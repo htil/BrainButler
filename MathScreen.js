@@ -253,7 +253,7 @@ export default class MathScreen extends React.Component<Props, State> {
   sendCondition() {
     this.socket.emit("event", {
       type: "condition",
-      conditon: this.giveWarning ? "C1" : "C2",
+      condition: this.giveWarning ? "C1" : "C2",
       timestamp: Date.now()
     });
   }
