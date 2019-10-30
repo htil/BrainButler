@@ -12,9 +12,7 @@ export default class GrabnerProblems extends ProblemSet {
         super();
         this.random = seedrandom(seed);
         const smalls = this._genSmallSet(24);
-        const larges = this._genLargeSet(36);
-
-        console.log(smalls);
+        const larges = this._genLargeSet(32);
 
         const operands = smalls.concat(larges);
         const sums = operands.map(prob => `${prob[0]} + ${prob[1]}`);
