@@ -117,6 +117,7 @@ export default class MathScreen extends React.Component<Props, State> {
     await this.continueExperiment();
   }
 
+
   async continueExperiment() {
     this.toPause = false;
     this.subscription = eegObservable
@@ -127,15 +128,28 @@ export default class MathScreen extends React.Component<Props, State> {
                           });
                         });
 
-    while (this.problemsSeen < this.problemSet.length() && !this.toPause) {
+    preds = [
+      () => this.problemsSeen < this.problemSet.length(),
+      () => !this.toPause
+    ];
+    callbacks = [
+     () => this.stop(false),
+     () => this.stop(true)
+    ];
+
+    if (this.problemsSeen < this.problemSet.length() / 2) {
+      preds.splice(1, 0, () => this.practice || this.problemsSeen !== this.problemSet.length() / 2 );
+      callbacks.splice(1, 0, () => {this.socket.emit("pause"); this.stop(true);} );
+    }
+
+    await posLoop(preds, callbacks, async () => {
       await this.trial();
       ++this.problemsSeen;
-    }
-    if (this.problemsSeen >= this.problemSet.length()) this.stop(false);
-    else                                               this.stop(true);
+    });
   }
 
   stop(temporary = false) {
+    console.log(`Stopping... temporary? ${temporary}`);
     this.dimmer.brightenScreen();
     const textState = temporary ? TextState.Pause : TextState.Wait;
     this.toPause = false;
@@ -152,7 +166,7 @@ export default class MathScreen extends React.Component<Props, State> {
   async darkening() {
     if (this.problemsSeen === this.problemSet.length() / 2) this.switchConditions();
     const dimScreen = this.dimScreen;
-    const delays = Config.delays.short;
+    const delays = Config.delays;
 
     let timePassed = 0;
     await sleep(delays.warning);
@@ -169,7 +183,7 @@ export default class MathScreen extends React.Component<Props, State> {
 
   async trial() {
     if (!this.practice) this.darkening();
-    const delays = Config.delays.short;
+    const delays = Config.delays;
     this.problem = this.problemSet.next();
 
     let timePassed = 0;
@@ -288,6 +302,16 @@ export default class MathScreen extends React.Component<Props, State> {
     this.socket.emit("form", form);
   }
 
+}
+
+async function posLoop(preds, callbacks, body) {
+  while ( preds.map(pred => pred()).reduce((a,b) => a && b) ) await body();
+  for (let i = 0; i < preds.length; ++i) {
+    if (!preds[i]()) {
+      console.log(`Pred ${i} violated`);
+      return callbacks[i]();
+    }
+  }
 }
 
 function sleep(ms) {
