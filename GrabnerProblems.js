@@ -11,8 +11,8 @@ export default class GrabnerProblems extends ProblemSet {
     constructor(seed = 0) {
         super();
         this.random = seedrandom(seed);
-        const smalls = this._genSmallSet();
-        const larges = this._genLargeSet();
+        const smalls = this._genSmallSet(18);
+        const larges = this._genLargeSet(36);
 
         const operands = smalls.concat(larges);
         const sums = operands.map(prob => `${prob[0]} + ${prob[1]}`);
@@ -41,26 +41,37 @@ export default class GrabnerProblems extends ProblemSet {
 
     toArray() {return this.problems.slice();}
 
-    _genSmallSet() {
+    _genSmallSet(n) {
         //Present 1/2 the small addition problems twice
         const possSmalls = GrabnerProblems._getPossSmalls();
         const [largerAugs, smallerAugs] = partition(possSmalls,largerAug);
-        const smalls = [...possSmalls,
-                        ...choose(largerAugs,6,this.random),
-                        ...choose(smallerAugs,6,this.random)];
-        return smalls;
+        if (n <= possSmalls.length)
+            return choose(largerAugs, n/2, this.random).concat(
+                   choose(smallerAugs, n - n/2, this.random)
+            );
+
+        const rem = possSmalls.length;
+        return possSmalls
+                .concat(choose(largerAugs, rem / 2, this.random))
+                .concat(choose(smallerAugs, rem - rem/2, this.random));
     }
 
-    _genLargeSet() {
+    _genLargeSet(n) {
         const decades = GrabnerProblems._getLargeDecades();
-        let larges = [];
-        decades.forEach(decade => {
+
+        let decadeCounts = new Array(decades.length);
+        decadeCounts.fill(n / decades.length);
+        for (let i = 0; i < n % decades.length; ++i) ++decadeCounts[i]
+
+        const larges = decades.map((decade, i) => {
+            const count = decadeCounts[i];
             const [largerAugs, smallerAugs] = partition(decade,largerAug);
-            larges.push(...choose(largerAugs,8,this.random));
-            larges.push(...choose(smallerAugs,8,this.random));
-        })
-        if (larges.length !== 48)
-            throw new Exception("larges is not the right length");
+            let subset = [];
+            subset.push(...choose(largerAugs, count/2, this.random));
+            subset.push(...choose(smallerAugs,count - count/2, this.random));
+            return subset;
+        }).reduce((probs, subset) => probs.concat(subset));
+
         return larges;
     }
 
