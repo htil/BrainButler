@@ -46,29 +46,29 @@ export default class GrabnerProblems extends ProblemSet {
         const possSmalls = GrabnerProblems._getPossSmalls();
         const [largerAugs, smallerAugs] = partition(possSmalls,largerAug);
         if (n <= possSmalls.length)
-            return choose(largerAugs, n/2, this.random).concat(
-                   choose(smallerAugs, n - n/2, this.random)
+            return choose(largerAugs, Math.floor(n/2), this.random).concat(
+                   choose(smallerAugs, n - Math.floor(n/2), this.random)
             );
 
         const rem = possSmalls.length;
         return possSmalls
-                .concat(choose(largerAugs, rem / 2, this.random))
-                .concat(choose(smallerAugs, rem - rem/2, this.random));
+                .concat(choose(largerAugs, Math.floor(rem/2), this.random))
+                .concat(choose(smallerAugs, rem - Math.floor(rem/2), this.random));
     }
 
     _genLargeSet(n) {
         const decades = GrabnerProblems._getLargeDecades();
 
         let decadeCounts = new Array(decades.length);
-        decadeCounts.fill(n / decades.length);
+        decadeCounts.fill( Math.floor(n / decades.length) );
         for (let i = 0; i < n % decades.length; ++i) ++decadeCounts[i]
 
         const larges = decades.map((decade, i) => {
             const count = decadeCounts[i];
             const [largerAugs, smallerAugs] = partition(decade,largerAug);
             let subset = [];
-            subset.push(...choose(largerAugs, count/2, this.random));
-            subset.push(...choose(smallerAugs,count - count/2, this.random));
+            subset.push(...choose(largerAugs, Math.floor(count/2), this.random));
+            subset.push(...choose(smallerAugs,count - Math.floor(count/2), this.random));
             return subset;
         }).reduce((probs, subset) => probs.concat(subset));
 
