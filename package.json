@@ -12,7 +12,7 @@
     "fy-random": "^1.0.1",
     "metro-react-native-babel-preset": "^0.53.1",
     "react": "^16.7.0",
-    "react-native": "^0.59.1",
+    "react-native": "^0.62.3",
     "react-native-bci": "0.0.3",
     "react-native-keep-awake": "^4.0.0",
     "react-native-muse": "0.0.5",
